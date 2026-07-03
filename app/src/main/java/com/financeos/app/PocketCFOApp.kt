@@ -1,60 +1,71 @@
 package com.financeos.app
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.financeos.app.components.DashboardCard
+import androidx.compose.ui.platform.LocalContext
+import com.financeos.app.discovery.DiscoveryEngine
+import com.financeos.app.screens.assets.AssetsScreen
+import com.financeos.app.state.PocketCFOState
 
 @Composable
 fun PocketCFOApp() {
+
+    val appState = remember {
+        PocketCFOState()
+    }
+
+    val context = LocalContext.current
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
 
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        if (appState.showAssets) {
 
-            Text(
-                text = "Pocket CFO",
-                style = MaterialTheme.typography.headlineMedium
-            )
+            AssetsScreen()
 
-            Text(
-                text = "Know. Plan. Grow.",
-                style = MaterialTheme.typography.bodyLarge
-            )
+        } else {
 
-            DashboardCard(
-                title = "Bills Due Today",
-                value = "₹12,500",
-                subtitle = "2 Bills Pending"
-            )
+            DashboardScreen(
 
-            DashboardCard(
-                title = "Credit Card Due",
-                value = "₹18,400",
-                subtitle = "Tomorrow"
-            )
+                discoveryStatus = appState.discoveryStatus,
 
-            DashboardCard(
-                title = "Cash Available",
-                value = "₹3,42,500",
-                subtitle = "Across 4 Bank Accounts"
-            )
+                messagesRead = appState.messagesRead,
 
-            DashboardCard(
-                title = "Today's Smart Advice",
-                value = "Use SBI BPCL Octane",
-                subtitle = "Fuel Purchase"
+                financialMessages = appState.financialMessagesFound,
+
+                banks = appState.banks,
+
+                onAssetsClick = {
+
+                    appState.openAssets()
+
+                },
+
+                onDiscoveryClick = {
+
+                    appState.startDiscovery()
+
+                    val result = DiscoveryEngine()
+                        .discoverFinancialMessages(context)
+
+                    appState.discoveryCompleted(
+
+                        totalMessages = result.messagesRead,
+
+                        financialMessages = result.financialMessages,
+
+                        banksFound = result.banks
+
+                    )
+
+                }
+
             )
 
         }
