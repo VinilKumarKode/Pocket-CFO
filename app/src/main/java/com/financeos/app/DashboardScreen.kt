@@ -5,8 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,7 +32,9 @@ fun DashboardScreen(
 
     onAssetsClick: () -> Unit,
 
-    onDiscoveryClick: () -> Unit
+    onDiscoveryClick: () -> Unit,
+
+    onAddExpenseClick: () -> Unit
 
 ) {
 
@@ -60,13 +62,7 @@ fun DashboardScreen(
 
             Button(
                 modifier = Modifier.weight(1f),
-                onClick = {
-                    Toast.makeText(
-                        context,
-                        "Add Expense - Coming Soon",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                onClick = onAddExpenseClick
             ) {
                 Text("+ Expense")
             }
@@ -116,11 +112,8 @@ fun DashboardScreen(
         }
 
         DashboardCard(
-
             title = "Financial Discovery",
-
             value = discoveryStatus,
-
             subtitle =
                 """
 Messages Read : $messagesRead
@@ -131,7 +124,6 @@ Banks Found : ${banks.size}
 
 Credit Cards : ${creditCards.size}
             """.trimIndent()
-
         )
 
         DashboardCard(

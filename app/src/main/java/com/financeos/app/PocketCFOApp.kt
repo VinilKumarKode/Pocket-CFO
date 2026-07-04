@@ -7,9 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
 import com.financeos.app.discovery.DiscoveryEngine
 import com.financeos.app.screens.assets.AssetsScreen
+import com.financeos.app.screens.expense.AddExpenseScreen
 import com.financeos.app.state.PocketCFOState
 import com.financeos.app.state.PocketCFOState.AppScreen
 
@@ -66,6 +66,10 @@ fun PocketCFOApp() {
 
                         )
 
+                    },
+
+                    onAddExpenseClick = {
+                        appState.openAddExpense()
                     }
 
                 )
@@ -80,13 +84,17 @@ fun PocketCFOApp() {
 
             AppScreen.ADD_EXPENSE -> {
 
-                Toast.makeText(
-                    context,
-                    "Add Expense Screen - Coming Soon",
-                    Toast.LENGTH_SHORT
-                ).show()
+                AddExpenseScreen(
 
-                appState.openDashboard()
+                    onSave = {
+                        appState.openDashboard()
+                    },
+
+                    onCancel = {
+                        appState.openDashboard()
+                    }
+
+                )
 
             }
 

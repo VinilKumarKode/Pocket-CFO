@@ -32,12 +32,12 @@ class PocketCFOState {
     var creditCards by mutableStateOf<List<CreditCard>>(emptyList())
         private set
 
-    fun openAssets() {
-        currentScreen = AppScreen.ASSETS
-    }
-
     fun openDashboard() {
         currentScreen = AppScreen.DASHBOARD
+    }
+
+    fun openAssets() {
+        currentScreen = AppScreen.ASSETS
     }
 
     fun openAddExpense() {
@@ -56,11 +56,8 @@ class PocketCFOState {
     ) {
 
         messagesRead = totalMessages
-
         financialMessagesFound = financialMessages
-
         banks = banksFound
-
         creditCards = cardsFound
 
         discoveryStatus = "Completed"
