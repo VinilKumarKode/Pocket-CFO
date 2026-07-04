@@ -2,34 +2,36 @@ package com.financeos.app.screens.expense
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun AddExpenseScreen(
 
-    onSave: () -> Unit,
+    onSave: (Double, String, String) -> Unit,
 
     onCancel: () -> Unit
 
 ) {
 
-    val amount = remember { mutableStateOf("") }
-    val category = remember { mutableStateOf("") }
-    val notes = remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
 
     Column(
 
@@ -55,10 +57,10 @@ fun AddExpenseScreen(
 
         OutlinedTextField(
 
-            value = amount.value,
+            value = amount,
 
             onValueChange = {
-                amount.value = it
+                amount = it
             },
 
             label = {
@@ -75,10 +77,10 @@ fun AddExpenseScreen(
 
         OutlinedTextField(
 
-            value = category.value,
+            value = category,
 
             onValueChange = {
-                category.value = it
+                category = it
             },
 
             label = {
@@ -95,10 +97,10 @@ fun AddExpenseScreen(
 
         OutlinedTextField(
 
-            value = notes.value,
+            value = notes,
 
             onValueChange = {
-                notes.value = it
+                notes = it
             },
 
             label = {
@@ -115,9 +117,19 @@ fun AddExpenseScreen(
 
         Button(
 
-            onClick = onSave,
+            modifier = Modifier.fillMaxWidth(),
 
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+
+                val expenseAmount = amount.toDoubleOrNull() ?: 0.0
+
+                onSave(
+                    expenseAmount,
+                    category,
+                    notes
+                )
+
+            }
 
         ) {
 
@@ -131,9 +143,9 @@ fun AddExpenseScreen(
 
         TextButton(
 
-            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth(),
 
-            modifier = Modifier.fillMaxWidth()
+            onClick = onCancel
 
         ) {
 

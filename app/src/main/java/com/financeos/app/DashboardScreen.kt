@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.financeos.app.components.DashboardCard
 import com.financeos.app.models.CreditCard
+import com.financeos.app.models.Transaction
 
 @Composable
 fun DashboardScreen(
@@ -29,6 +30,8 @@ fun DashboardScreen(
     banks: List<String>,
 
     creditCards: List<CreditCard>,
+
+    transactions: List<Transaction>,
 
     onAssetsClick: () -> Unit,
 

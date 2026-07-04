@@ -2,9 +2,12 @@ package com.financeos.app.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.financeos.app.models.CreditCard
+import com.financeos.app.models.Transaction
+import com.financeos.app.models.TransactionType
 
 class PocketCFOState {
 
@@ -32,16 +35,44 @@ class PocketCFOState {
     var creditCards by mutableStateOf<List<CreditCard>>(emptyList())
         private set
 
-    fun openDashboard() {
-        currentScreen = AppScreen.DASHBOARD
-    }
+    val transactions = mutableStateListOf<Transaction>()
 
     fun openAssets() {
         currentScreen = AppScreen.ASSETS
     }
 
+    fun openDashboard() {
+        currentScreen = AppScreen.DASHBOARD
+    }
+
     fun openAddExpense() {
         currentScreen = AppScreen.ADD_EXPENSE
+    }
+
+    fun addExpense(
+        amount: Double,
+        category: String,
+        notes: String
+    ) {
+
+        transactions.add(
+
+            0,
+
+            Transaction(
+
+                amount = amount,
+
+                category = category,
+
+                notes = notes,
+
+                type = TransactionType.EXPENSE
+
+            )
+
+        )
+
     }
 
     fun startDiscovery() {
@@ -56,10 +87,14 @@ class PocketCFOState {
     ) {
 
         messagesRead = totalMessages
+
         financialMessagesFound = financialMessages
+
         banks = banksFound
+
         creditCards = cardsFound
 
         discoveryStatus = "Completed"
     }
+
 }

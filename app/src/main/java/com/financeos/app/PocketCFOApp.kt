@@ -43,6 +43,8 @@ fun PocketCFOApp() {
 
                     creditCards = appState.creditCards,
 
+                    transactions = appState.transactions,
+
                     onAssetsClick = {
                         appState.openAssets()
                     },
@@ -86,12 +88,22 @@ fun PocketCFOApp() {
 
                 AddExpenseScreen(
 
-                    onSave = {
+                    onSave = { amount, category, notes ->
+
+                        appState.addExpense(
+                            amount,
+                            category,
+                            notes
+                        )
+
                         appState.openDashboard()
+
                     },
 
                     onCancel = {
+
                         appState.openDashboard()
+
                     }
 
                 )
