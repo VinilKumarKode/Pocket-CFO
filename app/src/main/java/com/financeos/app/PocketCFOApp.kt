@@ -7,9 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import com.financeos.app.discovery.DiscoveryEngine
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.state.PocketCFOState
+import com.financeos.app.state.PocketCFOState.AppScreen
 
 @Composable
 fun PocketCFOApp() {
@@ -25,50 +27,68 @@ fun PocketCFOApp() {
         color = MaterialTheme.colorScheme.background
     ) {
 
-        if (appState.showAssets) {
+        when (appState.currentScreen) {
 
-            AssetsScreen()
+            AppScreen.DASHBOARD -> {
 
-        } else {
+                DashboardScreen(
 
-            DashboardScreen(
+                    discoveryStatus = appState.discoveryStatus,
 
-                discoveryStatus = appState.discoveryStatus,
+                    messagesRead = appState.messagesRead,
 
-                messagesRead = appState.messagesRead,
+                    financialMessages = appState.financialMessagesFound,
 
-                financialMessages = appState.financialMessagesFound,
+                    banks = appState.banks,
 
-                banks = appState.banks,
+                    creditCards = appState.creditCards,
 
-                creditCards = appState.creditCards,
+                    onAssetsClick = {
+                        appState.openAssets()
+                    },
 
-                onAssetsClick = {
-                    appState.openAssets()
-                },
+                    onDiscoveryClick = {
 
-                onDiscoveryClick = {
+                        appState.startDiscovery()
 
-                    appState.startDiscovery()
+                        val result = DiscoveryEngine()
+                            .discoverFinancialMessages(context)
 
-                    val result = DiscoveryEngine()
-                        .discoverFinancialMessages(context)
+                        appState.discoveryCompleted(
 
-                    appState.discoveryCompleted(
+                            totalMessages = result.messagesRead,
 
-                        totalMessages = result.messagesRead,
+                            financialMessages = result.financialMessages,
 
-                        financialMessages = result.financialMessages,
+                            banksFound = result.banks,
 
-                        banksFound = result.banks,
+                            cardsFound = result.creditCards
 
-                        cardsFound = result.creditCards
+                        )
 
-                    )
+                    }
 
-                }
+                )
 
-            )
+            }
+
+            AppScreen.ASSETS -> {
+
+                AssetsScreen()
+
+            }
+
+            AppScreen.ADD_EXPENSE -> {
+
+                Toast.makeText(
+                    context,
+                    "Add Expense Screen - Coming Soon",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                appState.openDashboard()
+
+            }
 
         }
 

@@ -8,7 +8,13 @@ import com.financeos.app.models.CreditCard
 
 class PocketCFOState {
 
-    var showAssets by mutableStateOf(false)
+    enum class AppScreen {
+        DASHBOARD,
+        ASSETS,
+        ADD_EXPENSE
+    }
+
+    var currentScreen by mutableStateOf(AppScreen.DASHBOARD)
         private set
 
     var discoveryStatus by mutableStateOf("Ready")
@@ -27,11 +33,15 @@ class PocketCFOState {
         private set
 
     fun openAssets() {
-        showAssets = true
+        currentScreen = AppScreen.ASSETS
     }
 
-    fun closeAssets() {
-        showAssets = false
+    fun openDashboard() {
+        currentScreen = AppScreen.DASHBOARD
+    }
+
+    fun openAddExpense() {
+        currentScreen = AppScreen.ADD_EXPENSE
     }
 
     fun startDiscovery() {
