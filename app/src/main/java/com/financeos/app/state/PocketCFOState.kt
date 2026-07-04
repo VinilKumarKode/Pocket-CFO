@@ -14,7 +14,8 @@ class PocketCFOState {
     enum class AppScreen {
         DASHBOARD,
         ASSETS,
-        ADD_EXPENSE
+        ADD_EXPENSE,
+        ADD_INCOME
     }
 
     var currentScreen by mutableStateOf(AppScreen.DASHBOARD)
@@ -37,6 +38,19 @@ class PocketCFOState {
 
     val transactions = mutableStateListOf<Transaction>()
 
+    val totalIncome: Double
+        get() = transactions
+            .filter { it.type == TransactionType.INCOME }
+            .sumOf { it.amount }
+
+    val totalExpense: Double
+        get() = transactions
+            .filter { it.type == TransactionType.EXPENSE }
+            .sumOf { it.amount }
+
+    val netWorth: Double
+        get() = totalIncome - totalExpense
+
     fun openAssets() {
         currentScreen = AppScreen.ASSETS
     }
@@ -49,30 +63,40 @@ class PocketCFOState {
         currentScreen = AppScreen.ADD_EXPENSE
     }
 
+    fun openAddIncome() {
+        currentScreen = AppScreen.ADD_INCOME
+    }
+
     fun addExpense(
         amount: Double,
         category: String,
         notes: String
     ) {
-
         transactions.add(
-
             0,
-
             Transaction(
-
                 amount = amount,
-
                 category = category,
-
                 notes = notes,
-
                 type = TransactionType.EXPENSE
-
             )
-
         )
+    }
 
+    fun addIncome(
+        amount: Double,
+        source: String,
+        notes: String
+    ) {
+        transactions.add(
+            0,
+            Transaction(
+                amount = amount,
+                category = source,
+                notes = notes,
+                type = TransactionType.INCOME
+            )
+        )
     }
 
     fun startDiscovery() {
@@ -85,16 +109,10 @@ class PocketCFOState {
         banksFound: List<String>,
         cardsFound: List<CreditCard>
     ) {
-
         messagesRead = totalMessages
-
         financialMessagesFound = financialMessages
-
         banks = banksFound
-
         creditCards = cardsFound
-
         discoveryStatus = "Completed"
     }
-
 }

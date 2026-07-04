@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.financeos.app.discovery.DiscoveryEngine
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.screens.expense.AddExpenseScreen
+import com.financeos.app.screens.income.AddIncomeScreen
 import com.financeos.app.state.PocketCFOState
 import com.financeos.app.state.PocketCFOState.AppScreen
 
@@ -45,6 +46,12 @@ fun PocketCFOApp() {
 
                     transactions = appState.transactions,
 
+                    totalIncome = appState.totalIncome,
+
+                    totalExpense = appState.totalExpense,
+
+                    netWorth = appState.netWorth,
+
                     onAssetsClick = {
                         appState.openAssets()
                     },
@@ -72,6 +79,10 @@ fun PocketCFOApp() {
 
                     onAddExpenseClick = {
                         appState.openAddExpense()
+                    },
+
+                    onAddIncomeClick = {
+                        appState.openAddIncome()
                     }
 
                 )
@@ -93,6 +104,32 @@ fun PocketCFOApp() {
                         appState.addExpense(
                             amount,
                             category,
+                            notes
+                        )
+
+                        appState.openDashboard()
+
+                    },
+
+                    onCancel = {
+
+                        appState.openDashboard()
+
+                    }
+
+                )
+
+            }
+
+            AppScreen.ADD_INCOME -> {
+
+                AddIncomeScreen(
+
+                    onSave = { amount, source, notes ->
+
+                        appState.addIncome(
+                            amount,
+                            source,
                             notes
                         )
 

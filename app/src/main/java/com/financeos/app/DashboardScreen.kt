@@ -1,6 +1,5 @@
 package com.financeos.app
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.financeos.app.components.DashboardCard
 import com.financeos.app.models.CreditCard
@@ -33,15 +31,21 @@ fun DashboardScreen(
 
     transactions: List<Transaction>,
 
+    totalIncome: Double,
+
+    totalExpense: Double,
+
+    netWorth: Double,
+
     onAssetsClick: () -> Unit,
 
     onDiscoveryClick: () -> Unit,
 
-    onAddExpenseClick: () -> Unit
+    onAddExpenseClick: () -> Unit,
+
+    onAddIncomeClick: () -> Unit
 
 ) {
-
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier.padding(16.dp)
@@ -54,8 +58,16 @@ fun DashboardScreen(
 
         DashboardCard(
             title = "Net Worth",
-            value = "₹0.00",
-            subtitle = "Assets - Liabilities"
+            value = "₹%.2f".format(netWorth),
+            subtitle =
+                """
+Income : ₹%.2f
+
+Expense : ₹%.2f
+            """.trimIndent().format(
+                    totalIncome,
+                    totalExpense
+                )
         )
 
         Row(
@@ -72,13 +84,7 @@ fun DashboardScreen(
 
             Button(
                 modifier = Modifier.weight(1f),
-                onClick = {
-                    Toast.makeText(
-                        context,
-                        "Add Income - Coming Soon",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                onClick = onAddIncomeClick
             ) {
                 Text("+ Income")
             }
@@ -94,15 +100,9 @@ fun DashboardScreen(
 
             Button(
                 modifier = Modifier.weight(1f),
-                onClick = {
-                    Toast.makeText(
-                        context,
-                        "Add Account - Coming Soon",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                onClick = onAssetsClick
             ) {
-                Text("+ Account")
+                Text("Accounts")
             }
 
             Button(
@@ -115,11 +115,8 @@ fun DashboardScreen(
         }
 
         DashboardCard(
-
             title = "Financial Discovery",
-
             value = discoveryStatus,
-
             subtitle =
                 """
 Messages Read : $messagesRead
@@ -129,14 +126,24 @@ Financial SMS : $financialMessages
 Banks Found : ${banks.size}
 
 Credit Cards : ${creditCards.size}
-                """.trimIndent()
-
+            """.trimIndent()
         )
 
         DashboardCard(
-            title = "Accounts",
-            value = "Tap to Open",
-            subtitle = "Banks • Wallets • Cards • Investments"
+            title = "Recent Transactions",
+            value =
+                if (transactions.isEmpty())
+                    "No transactions yet"
+                else
+                    "${transactions.size} Transactions",
+            subtitle =
+                if (transactions.isEmpty()) {
+                    "Your latest expenses and income will appear here."
+                } else {
+                    transactions.take(5).joinToString("\n") {
+                        "${it.type} • ₹${it.amount} • ${it.category}"
+                    }
+                }
         )
 
         Text(
@@ -146,33 +153,6 @@ Credit Cards : ${creditCards.size}
                 .clickable {
                     onAssetsClick()
                 }
-        )
-
-        DashboardCard(
-
-            title = "Recent Transactions",
-
-            value =
-                if (transactions.isEmpty())
-                    "No transactions yet"
-                else
-                    "${transactions.size} Transactions",
-
-            subtitle =
-                if (transactions.isEmpty()) {
-
-                    "Your latest expenses and income will appear here."
-
-                } else {
-
-                    transactions.take(5).joinToString("\n") {
-
-                        "₹${it.amount} • ${it.category}"
-
-                    }
-
-                }
-
         )
 
     }
