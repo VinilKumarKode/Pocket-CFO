@@ -41,10 +41,10 @@ fun PocketCFOApp() {
 
                 banks = appState.banks,
 
+                creditCards = appState.creditCards,
+
                 onAssetsClick = {
-
                     appState.openAssets()
-
                 },
 
                 onDiscoveryClick = {
@@ -60,7 +60,9 @@ fun PocketCFOApp() {
 
                         financialMessages = result.financialMessages,
 
-                        banksFound = result.banks
+                        banksFound = result.banks,
+
+                        cardsFound = result.creditCards
 
                     )
 
