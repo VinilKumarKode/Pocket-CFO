@@ -115,8 +115,11 @@ fun DashboardScreen(
         }
 
         DashboardCard(
+
             title = "Financial Discovery",
+
             value = discoveryStatus,
+
             subtitle =
                 """
 Messages Read : $messagesRead
@@ -126,7 +129,8 @@ Financial SMS : $financialMessages
 Banks Found : ${banks.size}
 
 Credit Cards : ${creditCards.size}
-            """.trimIndent()
+                """.trimIndent()
+
         )
 
         DashboardCard(
@@ -145,9 +149,30 @@ Credit Cards : ${creditCards.size}
         )
 
         DashboardCard(
+
             title = "Recent Transactions",
-            value = "No transactions yet",
-            subtitle = "Your latest expenses and income will appear here."
+
+            value =
+                if (transactions.isEmpty())
+                    "No transactions yet"
+                else
+                    "${transactions.size} Transactions",
+
+            subtitle =
+                if (transactions.isEmpty()) {
+
+                    "Your latest expenses and income will appear here."
+
+                } else {
+
+                    transactions.take(5).joinToString("\n") {
+
+                        "₹${it.amount} • ${it.category}"
+
+                    }
+
+                }
+
         )
 
     }
