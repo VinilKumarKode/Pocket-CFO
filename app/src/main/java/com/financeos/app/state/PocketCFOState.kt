@@ -80,4 +80,7 @@ class PocketCFOState {
     fun discoveryCompleted(totalMessages: Int, financialMessages: Int, banksFound: List<String>, cardsFound: List<CreditCard>) {
         messagesRead = totalMessages; financialMessagesFound = financialMessages; banks = banksFound; creditCards = cardsFound; discoveryStatus = "Completed"
     }
+    fun deleteTransaction(transaction: Transaction) {
+        transactions.remove(transaction)
+    }
 }

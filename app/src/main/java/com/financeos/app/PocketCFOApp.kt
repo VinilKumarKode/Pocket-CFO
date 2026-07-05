@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.financeos.app.screens.DashboardScreen
 import com.financeos.app.screens.MonthlyDashboardScreen
 import com.financeos.app.screens.account.AccountDetailsScreen
 import com.financeos.app.screens.assets.AssetsScreen

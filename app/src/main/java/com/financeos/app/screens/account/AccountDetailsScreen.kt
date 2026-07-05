@@ -82,7 +82,11 @@ fun AccountDetailsScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(accountTransactions) { transaction ->
-                        TransactionCard(transaction = transaction)
+                        // FIXED: Added the onClick parameter here to match the new TransactionCard
+                        TransactionCard(
+                            transaction = transaction,
+                            onClick = { state.deleteTransaction(transaction) }
+                        )
                     }
                 }
             }
