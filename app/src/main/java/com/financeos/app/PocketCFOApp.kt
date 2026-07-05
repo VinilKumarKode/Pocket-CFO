@@ -19,76 +19,54 @@ import com.financeos.app.state.PocketCFOState.AppScreen
 fun PocketCFOApp() {
 
     val appState = remember { PocketCFOState() }
+
     val context = LocalContext.current
 
     Surface(
+
         modifier = Modifier.fillMaxSize(),
+
         color = MaterialTheme.colorScheme.background
+
     ) {
 
         when (appState.currentScreen) {
-
-            AppScreen.DASHBOARD -> {
-
-                DashboardScreen(
-
-                    discoveryStatus = appState.discoveryStatus,
-                    messagesRead = appState.messagesRead,
-                    financialMessages = appState.financialMessagesFound,
-                    banks = appState.banks,
-                    creditCards = appState.creditCards,
-
-                    transactions = appState.transactions,
-                    totalIncome = appState.totalIncome,
-                    totalExpense = appState.totalExpense,
-                    netWorth = appState.netWorth,
-
-                    onAssetsClick = {
-                        appState.openAssets()
-                    },
-
-                    onDiscoveryClick = {
-
-                        appState.startDiscovery()
-
-                        val result = DiscoveryEngine()
-                            .discoverFinancialMessages(context)
-
-                        appState.discoveryCompleted(
-
-                            totalMessages = result.messagesRead,
-                            financialMessages = result.financialMessages,
-                            banksFound = result.banks,
-                            cardsFound = result.creditCards
-
-                        )
-
-                    },
-
-                    onAddExpenseClick = {
-                        appState.openAddExpense()
-                    },
-
-                    onAddIncomeClick = {
-                        appState.openAddIncome()
-                    }
-
+            AppScreen.ACCOUNT_DETAILS -> {
+                com.financeos.app.screens.account.AccountDetailsScreen(
+                    state = appState,
+                    onBack = { appState.openAssets() }
                 )
-
             }
-
+            AppScreen.DASHBOARD -> {
+                DashboardScreen(
+                    state = appState,
+                    onNavigateToExpense = { appState.openAddExpense() },
+                    onNavigateToIncome = { appState.openAddIncome() },
+                    onNavigateToAssets = { appState.openAssets() }
+                )
+            }
             AppScreen.ASSETS -> {
 
                 AssetsScreen(
 
                     accounts = appState.accounts,
 
+                    totalAssets = appState.totalAssets,
+
+                    totalLiabilities = appState.totalLiabilities,
+
+                    netWorth = appState.netWorth,
+
                     onAddAccount = {
+
                         appState.openAddAccount()
+
                     },
 
                     onBack = {
+
                         appState.openDashboard()
+
                     }
 
                 )
@@ -136,7 +114,9 @@ fun PocketCFOApp() {
                         appState.addExpense(
 
                             amount,
+
                             category,
+
                             notes
 
                         )
@@ -164,7 +144,9 @@ fun PocketCFOApp() {
                         appState.addIncome(
 
                             amount,
+
                             source,
+
                             notes
 
                         )

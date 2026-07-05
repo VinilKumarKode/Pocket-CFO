@@ -1,160 +1,106 @@
 package com.financeos.app
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.financeos.app.components.DashboardCard
-import com.financeos.app.models.CreditCard
-import com.financeos.app.models.Transaction
+import com.financeos.app.state.PocketCFOState
+import com.financeos.app.ui.components.TransactionCard
 
 @Composable
 fun DashboardScreen(
-
-    discoveryStatus: String,
-
-    messagesRead: Int,
-
-    financialMessages: Int,
-
-    banks: List<String>,
-
-    creditCards: List<CreditCard>,
-
-    transactions: List<Transaction>,
-
-    totalIncome: Double,
-
-    totalExpense: Double,
-
-    netWorth: Double,
-
-    onAssetsClick: () -> Unit,
-
-    onDiscoveryClick: () -> Unit,
-
-    onAddExpenseClick: () -> Unit,
-
-    onAddIncomeClick: () -> Unit
-
+    state: PocketCFOState,
+    onNavigateToExpense: () -> Unit,
+    onNavigateToIncome: () -> Unit,
+    onNavigateToAssets: () -> Unit
 ) {
-
     Column(
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
     ) {
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Pocket CFO",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        DashboardCard(
-            title = "Net Worth",
-            value = "₹%.2f".format(netWorth),
-            subtitle =
-                """
-Income : ₹%.2f
-
-Expense : ₹%.2f
-            """.trimIndent().format(
-                    totalIncome,
-                    totalExpense
-                )
-        )
-
-        Row(
+        // Financial Summary Card
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
-
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = onAddExpenseClick
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("+ Expense")
-            }
-
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = onAddIncomeClick
-            ) {
-                Text("+ Income")
-            }
-
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = onAssetsClick
-            ) {
-                Text("Accounts")
-            }
-
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = onDiscoveryClick
-            ) {
-                Text("Discovery")
-            }
-
-        }
-
-        DashboardCard(
-            title = "Financial Discovery",
-            value = discoveryStatus,
-            subtitle =
-                """
-Messages Read : $messagesRead
-
-Financial SMS : $financialMessages
-
-Banks Found : ${banks.size}
-
-Credit Cards : ${creditCards.size}
-            """.trimIndent()
-        )
-
-        DashboardCard(
-            title = "Recent Transactions",
-            value =
-                if (transactions.isEmpty())
-                    "No transactions yet"
-                else
-                    "${transactions.size} Transactions",
-            subtitle =
-                if (transactions.isEmpty()) {
-                    "Your latest expenses and income will appear here."
-                } else {
-                    transactions.take(5).joinToString("\n") {
-                        "${it.type} • ₹${it.amount} • ${it.category}"
+                Text(text = "Net Worth", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = "₹${"%.2f".format(state.netWorth)}",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Income", style = MaterialTheme.typography.labelMedium)
+                        Text("₹${"%.2f".format(state.totalIncome)}", color = MaterialTheme.colorScheme.primary)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Expense", style = MaterialTheme.typography.labelMedium)
+                        Text("₹${"%.2f".format(state.totalExpense)}", color = MaterialTheme.colorScheme.error)
                     }
                 }
-        )
+            }
+        }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Quick Actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(onClick = onNavigateToExpense, modifier = Modifier.weight(1f)) {
+                Text("+ Expense")
+            }
+            Button(onClick = onNavigateToIncome, modifier = Modifier.weight(1f)) {
+                Text("+ Income")
+            }
+            OutlinedButton(onClick = onNavigateToAssets, modifier = Modifier.weight(1f)) {
+                Text("Assets")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Professional Transaction Ledger
         Text(
-            text = "Manage Accounts →",
-            modifier = Modifier
-                .padding(top = 20.dp)
-                .clickable {
-                    onAssetsClick()
-                }
+            text = "Recent Transactions",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold
         )
+        Spacer(modifier = Modifier.height(8.dp))
 
+        if (state.transactions.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = "No transactions yet.", color = MaterialTheme.colorScheme.outline)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                // This line is now fixed
+                items(state.transactions.sortedByDescending { it.timestamp }) { transaction ->
+                    TransactionCard(transaction = transaction)
+                }
+            }
+        }
     }
-
 }

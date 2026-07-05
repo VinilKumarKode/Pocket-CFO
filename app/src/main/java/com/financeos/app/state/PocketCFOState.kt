@@ -18,10 +18,14 @@ class PocketCFOState {
         ASSETS,
         ADD_ACCOUNT,
         ADD_EXPENSE,
-        ADD_INCOME
+        ADD_INCOME,
+        ACCOUNT_DETAILS // Added new screen
     }
 
     var currentScreen by mutableStateOf(AppScreen.DASHBOARD)
+        private set
+
+    var selectedAccountId by mutableStateOf<String?>(null) // Tracks which account is being viewed
         private set
 
     var discoveryStatus by mutableStateOf("Ready")
@@ -53,15 +57,27 @@ class PocketCFOState {
             .filter { it.type == TransactionType.EXPENSE }
             .sumOf { it.amount }
 
+    val totalAssets: Double
+        get() = accounts
+            .filter { !it.isLiability }
+            .sumOf { it.balance }
+
+    val totalLiabilities: Double
+        get() = accounts
+            .filter { it.isLiability }
+            .sumOf { it.balance }
+
     val netWorth: Double
-        get() = totalIncome - totalExpense
+        get() = totalAssets - totalLiabilities + totalIncome - totalExpense
 
     fun openDashboard() {
         currentScreen = AppScreen.DASHBOARD
+        selectedAccountId = null
     }
 
     fun openAssets() {
         currentScreen = AppScreen.ASSETS
+        selectedAccountId = null
     }
 
     fun openAddAccount() {
@@ -76,81 +92,62 @@ class PocketCFOState {
         currentScreen = AppScreen.ADD_INCOME
     }
 
+    // New function to open a specific account
+    fun openAccountDetails(accountId: String) {
+        selectedAccountId = accountId
+        currentScreen = AppScreen.ACCOUNT_DETAILS
+    }
+
     fun addAccount(
         name: String,
         type: AccountType,
         balance: Double,
         institution: String
     ) {
-
         accounts.add(
-
             Account(
-
                 name = name,
-
                 type = type,
-
                 balance = balance,
-
                 institution = institution
-
             )
-
         )
-
     }
 
     fun addExpense(
         amount: Double,
         category: String,
-        notes: String
+        notes: String,
+        accountId: String? = null // Added parameter
     ) {
-
         transactions.add(
-
             0,
-
             Transaction(
-
                 amount = amount,
-
                 category = category,
-
                 notes = notes,
-
-                type = TransactionType.EXPENSE
-
+                type = TransactionType.EXPENSE,
+                accountId = accountId
             )
-
         )
-
     }
 
     fun addIncome(
         amount: Double,
         source: String,
-        notes: String
+        notes: String,
+        accountId: String? = null // Added parameter
     ) {
-
         transactions.add(
-
             0,
-
             Transaction(
-
                 amount = amount,
-
                 category = source,
-
                 notes = notes,
-
-                type = TransactionType.INCOME
-
+                type = TransactionType.INCOME,
+                accountId = accountId
             )
-
         )
-
     }
 
     fun startDiscovery() {
@@ -163,13 +160,10 @@ class PocketCFOState {
         banksFound: List<String>,
         cardsFound: List<CreditCard>
     ) {
-
         messagesRead = totalMessages
         financialMessagesFound = financialMessages
         banks = banksFound
         creditCards = cardsFound
         discoveryStatus = "Completed"
-
     }
-
 }

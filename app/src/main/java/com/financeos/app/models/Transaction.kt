@@ -1,25 +1,18 @@
 package com.financeos.app.models
 
+import java.time.LocalDateTime
+import java.util.UUID
+
 data class Transaction(
-
-    val id: Long = System.currentTimeMillis(),
-
+    val id: String = UUID.randomUUID().toString(),
     val amount: Double,
-
     val category: String,
-
     val notes: String,
-
     val type: TransactionType,
-
-    val timestamp: Long = System.currentTimeMillis()
-
+    val timestamp: LocalDateTime = LocalDateTime.now(),
+    val accountId: String? = null // This links the transaction to a specific account
 )
 
 enum class TransactionType {
-
-    EXPENSE,
-
-    INCOME
-
+    INCOME, EXPENSE
 }
