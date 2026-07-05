@@ -1,17 +1,32 @@
 package com.financeos.app.screens.assets
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.financeos.app.components.DashboardCard
+import com.financeos.app.models.Account
 
 @Composable
-fun AssetsScreen() {
+fun AssetsScreen(
+
+    accounts: List<Account>,
+
+    onAddAccount: () -> Unit,
+
+    onBack: () -> Unit
+
+) {
 
     Column(
         modifier = Modifier
@@ -20,33 +35,67 @@ fun AssetsScreen() {
     ) {
 
         Text(
-            text = "Assets",
+            text = "Accounts",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        DashboardCard(
-            title = "🏦 Bank Accounts",
-            value = "4 Accounts",
-            subtitle = "Tap to Manage"
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        DashboardCard(
-            title = "💳 Credit Cards",
-            value = "7 Cards",
-            subtitle = "Tap to Manage"
-        )
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onAddAccount
+        ) {
+            Text("Add Account")
+        }
 
-        DashboardCard(
-            title = "🏠 Loans",
-            value = "3 Loans",
-            subtitle = "Tap to Manage"
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        DashboardCard(
-            title = "🛡 Insurance",
-            value = "2 Policies",
-            subtitle = "Tap to Manage"
-        )
+        LazyColumn {
+
+            items(accounts) { account ->
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+
+                        Text(
+                            text = account.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Text(account.type.name)
+
+                        Text("₹${account.balance}")
+
+                        if (account.institution.isNotBlank()) {
+
+                            Text(account.institution)
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onBack
+        ) {
+            Text("Back")
+        }
+
     }
-}
 
+}

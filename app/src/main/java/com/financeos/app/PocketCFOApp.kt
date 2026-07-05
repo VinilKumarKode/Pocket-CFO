@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.financeos.app.discovery.DiscoveryEngine
+import com.financeos.app.models.AccountType
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.screens.expense.AddExpenseScreen
 import com.financeos.app.screens.income.AddIncomeScreen
@@ -17,9 +18,7 @@ import com.financeos.app.state.PocketCFOState.AppScreen
 @Composable
 fun PocketCFOApp() {
 
-    val appState = remember {
-        PocketCFOState()
-    }
+    val appState = remember { PocketCFOState() }
 
     val context = LocalContext.current
 
@@ -91,7 +90,33 @@ fun PocketCFOApp() {
 
             AppScreen.ASSETS -> {
 
-                AssetsScreen()
+                AssetsScreen(
+
+                    accounts = appState.accounts,
+
+                    onAddAccount = {
+
+                        appState.addAccount(
+
+                            name = "SBI Savings",
+
+                            type = AccountType.BANK,
+
+                            balance = 0.0,
+
+                            institution = "State Bank of India"
+
+                        )
+
+                    },
+
+                    onBack = {
+
+                        appState.openDashboard()
+
+                    }
+
+                )
 
             }
 

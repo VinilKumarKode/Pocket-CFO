@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.financeos.app.models.Account
+import com.financeos.app.models.AccountType
 import com.financeos.app.models.CreditCard
 import com.financeos.app.models.Transaction
 import com.financeos.app.models.TransactionType
@@ -37,6 +39,8 @@ class PocketCFOState {
         private set
 
     val transactions = mutableStateListOf<Transaction>()
+
+    val accounts = mutableStateListOf<Account>()
 
     val totalIncome: Double
         get() = transactions
@@ -72,6 +76,7 @@ class PocketCFOState {
         category: String,
         notes: String
     ) {
+
         transactions.add(
             0,
             Transaction(
@@ -81,6 +86,7 @@ class PocketCFOState {
                 type = TransactionType.EXPENSE
             )
         )
+
     }
 
     fun addIncome(
@@ -88,6 +94,7 @@ class PocketCFOState {
         source: String,
         notes: String
     ) {
+
         transactions.add(
             0,
             Transaction(
@@ -97,6 +104,37 @@ class PocketCFOState {
                 type = TransactionType.INCOME
             )
         )
+
+    }
+
+    fun addAccount(
+
+        name: String,
+
+        type: AccountType,
+
+        balance: Double,
+
+        institution: String
+
+    ) {
+
+        accounts.add(
+
+            Account(
+
+                name = name,
+
+                type = type,
+
+                balance = balance,
+
+                institution = institution
+
+            )
+
+        )
+
     }
 
     fun startDiscovery() {
@@ -109,10 +147,13 @@ class PocketCFOState {
         banksFound: List<String>,
         cardsFound: List<CreditCard>
     ) {
+
         messagesRead = totalMessages
         financialMessagesFound = financialMessages
         banks = banksFound
         creditCards = cardsFound
         discoveryStatus = "Completed"
+
     }
+
 }
