@@ -16,6 +16,7 @@ class PocketCFOState {
     enum class AppScreen {
         DASHBOARD,
         ASSETS,
+        ADD_ACCOUNT,
         ADD_EXPENSE,
         ADD_INCOME
     }
@@ -55,12 +56,16 @@ class PocketCFOState {
     val netWorth: Double
         get() = totalIncome - totalExpense
 
+    fun openDashboard() {
+        currentScreen = AppScreen.DASHBOARD
+    }
+
     fun openAssets() {
         currentScreen = AppScreen.ASSETS
     }
 
-    fun openDashboard() {
-        currentScreen = AppScreen.DASHBOARD
+    fun openAddAccount() {
+        currentScreen = AppScreen.ADD_ACCOUNT
     }
 
     fun openAddExpense() {
@@ -71,52 +76,11 @@ class PocketCFOState {
         currentScreen = AppScreen.ADD_INCOME
     }
 
-    fun addExpense(
-        amount: Double,
-        category: String,
-        notes: String
-    ) {
-
-        transactions.add(
-            0,
-            Transaction(
-                amount = amount,
-                category = category,
-                notes = notes,
-                type = TransactionType.EXPENSE
-            )
-        )
-
-    }
-
-    fun addIncome(
-        amount: Double,
-        source: String,
-        notes: String
-    ) {
-
-        transactions.add(
-            0,
-            Transaction(
-                amount = amount,
-                category = source,
-                notes = notes,
-                type = TransactionType.INCOME
-            )
-        )
-
-    }
-
     fun addAccount(
-
         name: String,
-
         type: AccountType,
-
         balance: Double,
-
         institution: String
-
     ) {
 
         accounts.add(
@@ -130,6 +94,58 @@ class PocketCFOState {
                 balance = balance,
 
                 institution = institution
+
+            )
+
+        )
+
+    }
+
+    fun addExpense(
+        amount: Double,
+        category: String,
+        notes: String
+    ) {
+
+        transactions.add(
+
+            0,
+
+            Transaction(
+
+                amount = amount,
+
+                category = category,
+
+                notes = notes,
+
+                type = TransactionType.EXPENSE
+
+            )
+
+        )
+
+    }
+
+    fun addIncome(
+        amount: Double,
+        source: String,
+        notes: String
+    ) {
+
+        transactions.add(
+
+            0,
+
+            Transaction(
+
+                amount = amount,
+
+                category = source,
+
+                notes = notes,
+
+                type = TransactionType.INCOME
 
             )
 

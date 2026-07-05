@@ -29,53 +29,73 @@ fun AssetsScreen(
 ) {
 
     Column(
+
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+
     ) {
 
         Text(
+
             text = "Accounts",
+
             style = MaterialTheme.typography.headlineMedium
+
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
+
             modifier = Modifier.fillMaxWidth(),
+
             onClick = onAddAccount
+
         ) {
+
             Text("Add Account")
+
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn {
+        if (accounts.isEmpty()) {
 
-            items(accounts) { account ->
+            Text("No accounts added yet.")
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                ) {
+        } else {
 
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+            LazyColumn {
+
+                items(accounts) { account ->
+
+                    Card(
+
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+
                     ) {
 
-                        Text(
-                            text = account.name,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
 
-                        Text(account.type.name)
+                            Text(
+                                account.name,
+                                style = MaterialTheme.typography.titleMedium
+                            )
 
-                        Text("₹${account.balance}")
+                            Text(account.type.name)
 
-                        if (account.institution.isNotBlank()) {
+                            Text("₹%.2f".format(account.balance))
 
-                            Text(account.institution)
+                            if (account.institution.isNotBlank()) {
+
+                                Text(account.institution)
+
+                            }
 
                         }
 
@@ -90,10 +110,15 @@ fun AssetsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
+
             modifier = Modifier.fillMaxWidth(),
+
             onClick = onBack
+
         ) {
+
             Text("Back")
+
         }
 
     }

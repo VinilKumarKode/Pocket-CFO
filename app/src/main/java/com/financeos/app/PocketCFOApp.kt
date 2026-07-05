@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.financeos.app.discovery.DiscoveryEngine
-import com.financeos.app.models.AccountType
+import com.financeos.app.screens.account.AddAccountScreen
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.screens.expense.AddExpenseScreen
 import com.financeos.app.screens.income.AddIncomeScreen
@@ -19,7 +19,6 @@ import com.financeos.app.state.PocketCFOState.AppScreen
 fun PocketCFOApp() {
 
     val appState = remember { PocketCFOState() }
-
     val context = LocalContext.current
 
     Surface(
@@ -34,21 +33,14 @@ fun PocketCFOApp() {
                 DashboardScreen(
 
                     discoveryStatus = appState.discoveryStatus,
-
                     messagesRead = appState.messagesRead,
-
                     financialMessages = appState.financialMessagesFound,
-
                     banks = appState.banks,
-
                     creditCards = appState.creditCards,
 
                     transactions = appState.transactions,
-
                     totalIncome = appState.totalIncome,
-
                     totalExpense = appState.totalExpense,
-
                     netWorth = appState.netWorth,
 
                     onAssetsClick = {
@@ -65,11 +57,8 @@ fun PocketCFOApp() {
                         appState.discoveryCompleted(
 
                             totalMessages = result.messagesRead,
-
                             financialMessages = result.financialMessages,
-
                             banksFound = result.banks,
-
                             cardsFound = result.creditCards
 
                         )
@@ -95,24 +84,39 @@ fun PocketCFOApp() {
                     accounts = appState.accounts,
 
                     onAddAccount = {
-
-                        appState.addAccount(
-
-                            name = "SBI Savings",
-
-                            type = AccountType.BANK,
-
-                            balance = 0.0,
-
-                            institution = "State Bank of India"
-
-                        )
-
+                        appState.openAddAccount()
                     },
 
                     onBack = {
-
                         appState.openDashboard()
+                    }
+
+                )
+
+            }
+
+            AppScreen.ADD_ACCOUNT -> {
+
+                AddAccountScreen(
+
+                    onSave = { name, institution, balance, type ->
+
+                        appState.addAccount(
+
+                            name = name,
+                            type = type,
+                            balance = balance,
+                            institution = institution
+
+                        )
+
+                        appState.openAssets()
+
+                    },
+
+                    onCancel = {
+
+                        appState.openAssets()
 
                     }
 
@@ -127,9 +131,11 @@ fun PocketCFOApp() {
                     onSave = { amount, category, notes ->
 
                         appState.addExpense(
+
                             amount,
                             category,
                             notes
+
                         )
 
                         appState.openDashboard()
@@ -153,9 +159,11 @@ fun PocketCFOApp() {
                     onSave = { amount, source, notes ->
 
                         appState.addIncome(
+
                             amount,
                             source,
                             notes
+
                         )
 
                         appState.openDashboard()
