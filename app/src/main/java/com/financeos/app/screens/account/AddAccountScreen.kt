@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,10 +24,10 @@ import com.financeos.app.models.AccountType
 fun AddAccountScreen(
 
     onSave: (
-        name: String,
-        institution: String,
-        balance: Double,
-        type: AccountType
+        String,
+        String,
+        Double,
+        AccountType
     ) -> Unit,
 
     onCancel: () -> Unit
@@ -34,6 +37,12 @@ fun AddAccountScreen(
     var name by remember { mutableStateOf("") }
     var institution by remember { mutableStateOf("") }
     var balance by remember { mutableStateOf("") }
+
+    var expanded by remember { mutableStateOf(false) }
+
+    var accountType by remember {
+        mutableStateOf(AccountType.BANK)
+    }
 
     Column(
 
@@ -50,7 +59,7 @@ fun AddAccountScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         OutlinedTextField(
             value = name,
@@ -64,7 +73,7 @@ fun AddAccountScreen(
         OutlinedTextField(
             value = institution,
             onValueChange = { institution = it },
-            label = { Text("Bank / Institution") },
+            label = { Text("Institution") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -76,6 +85,49 @@ fun AddAccountScreen(
             label = { Text("Opening Balance") },
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { expanded = true }
+        ) {
+
+            Text("Type : ${accountType.name}")
+
+        }
+
+        DropdownMenu(
+
+            expanded = expanded,
+
+            onDismissRequest = {
+                expanded = false
+            }
+
+        ) {
+
+            AccountType.entries.forEach {
+
+                DropdownMenuItem(
+
+                    text = {
+                        Text(it.name.replace("_", " "))
+                    },
+
+                    onClick = {
+
+                        accountType = it
+
+                        expanded = false
+
+                    }
+
+                )
+
+            }
+
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -93,7 +145,7 @@ fun AddAccountScreen(
 
                     balance.toDoubleOrNull() ?: 0.0,
 
-                    AccountType.BANK
+                    accountType
 
                 )
 

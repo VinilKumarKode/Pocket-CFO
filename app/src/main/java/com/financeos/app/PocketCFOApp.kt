@@ -99,13 +99,16 @@ fun PocketCFOApp() {
 
                 AddAccountScreen(
 
-                    onSave = { name, institution, balance, type ->
+                    onSave = { name, institution, balance, accountType ->
 
                         appState.addAccount(
 
                             name = name,
-                            type = type,
+
+                            type = accountType,
+
                             balance = balance,
+
                             institution = institution
 
                         )
