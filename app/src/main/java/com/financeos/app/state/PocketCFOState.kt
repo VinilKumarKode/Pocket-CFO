@@ -10,6 +10,7 @@ import com.financeos.app.models.AccountType
 import com.financeos.app.models.CreditCard
 import com.financeos.app.models.Transaction
 import com.financeos.app.models.TransactionType
+import java.time.LocalDateTime
 
 class PocketCFOState {
 
@@ -19,13 +20,14 @@ class PocketCFOState {
         ADD_ACCOUNT,
         ADD_EXPENSE,
         ADD_INCOME,
-        ACCOUNT_DETAILS // Added new screen
+        ACCOUNT_DETAILS,
+        MONTHLY_DASHBOARD // New screen added
     }
 
     var currentScreen by mutableStateOf(AppScreen.DASHBOARD)
         private set
 
-    var selectedAccountId by mutableStateOf<String?>(null) // Tracks which account is being viewed
+    var selectedAccountId by mutableStateOf<String?>(null)
         private set
 
     var discoveryStatus by mutableStateOf("Ready")
@@ -47,6 +49,7 @@ class PocketCFOState {
 
     val accounts = mutableStateListOf<Account>()
 
+    // Global Metrics
     val totalIncome: Double
         get() = transactions
             .filter { it.type == TransactionType.INCOME }
@@ -70,6 +73,35 @@ class PocketCFOState {
     val netWorth: Double
         get() = totalAssets - totalLiabilities + totalIncome - totalExpense
 
+    // Monthly Metrics
+    private val currentMonthTransactions: List<Transaction>
+        get() {
+            val now = LocalDateTime.now()
+            return transactions.filter {
+                it.timestamp.month == now.month && it.timestamp.year == now.year
+            }
+        }
+
+    val monthlyIncome: Double
+        get() = currentMonthTransactions
+            .filter { it.type == TransactionType.INCOME }
+            .sumOf { it.amount }
+
+    val monthlyExpense: Double
+        get() = currentMonthTransactions
+            .filter { it.type == TransactionType.EXPENSE }
+            .sumOf { it.amount }
+
+    val monthlySavings: Double
+        get() = monthlyIncome - monthlyExpense
+
+    val burnRate: Double
+        get() {
+            val currentDay = LocalDateTime.now().dayOfMonth
+            return if (currentDay > 0) monthlyExpense / currentDay else 0.0
+        }
+
+    // Navigation
     fun openDashboard() {
         currentScreen = AppScreen.DASHBOARD
         selectedAccountId = null
@@ -92,74 +124,33 @@ class PocketCFOState {
         currentScreen = AppScreen.ADD_INCOME
     }
 
-    // New function to open a specific account
     fun openAccountDetails(accountId: String) {
         selectedAccountId = accountId
         currentScreen = AppScreen.ACCOUNT_DETAILS
     }
 
-    fun addAccount(
-        name: String,
-        type: AccountType,
-        balance: Double,
-        institution: String
-    ) {
-        accounts.add(
-            Account(
-                name = name,
-                type = type,
-                balance = balance,
-                institution = institution
-            )
-        )
+    fun openMonthlyDashboard() {
+        currentScreen = AppScreen.MONTHLY_DASHBOARD
     }
 
-    fun addExpense(
-        amount: Double,
-        category: String,
-        notes: String,
-        accountId: String? = null // Added parameter
-    ) {
-        transactions.add(
-            0,
-            Transaction(
-                amount = amount,
-                category = category,
-                notes = notes,
-                type = TransactionType.EXPENSE,
-                accountId = accountId
-            )
-        )
+    // Actions
+    fun addAccount(name: String, type: AccountType, balance: Double, institution: String) {
+        accounts.add(Account(name = name, type = type, balance = balance, institution = institution))
     }
 
-    fun addIncome(
-        amount: Double,
-        source: String,
-        notes: String,
-        accountId: String? = null // Added parameter
-    ) {
-        transactions.add(
-            0,
-            Transaction(
-                amount = amount,
-                category = source,
-                notes = notes,
-                type = TransactionType.INCOME,
-                accountId = accountId
-            )
-        )
+    fun addExpense(amount: Double, category: String, notes: String, accountId: String? = null) {
+        transactions.add(0, Transaction(amount = amount, category = category, notes = notes, type = TransactionType.EXPENSE, accountId = accountId))
+    }
+
+    fun addIncome(amount: Double, source: String, notes: String, accountId: String? = null) {
+        transactions.add(0, Transaction(amount = amount, category = source, notes = notes, type = TransactionType.INCOME, accountId = accountId))
     }
 
     fun startDiscovery() {
         discoveryStatus = "Scanning..."
     }
 
-    fun discoveryCompleted(
-        totalMessages: Int,
-        financialMessages: Int,
-        banksFound: List<String>,
-        cardsFound: List<CreditCard>
-    ) {
+    fun discoveryCompleted(totalMessages: Int, financialMessages: Int, banksFound: List<String>, cardsFound: List<CreditCard>) {
         messagesRead = totalMessages
         financialMessagesFound = financialMessages
         banks = banksFound

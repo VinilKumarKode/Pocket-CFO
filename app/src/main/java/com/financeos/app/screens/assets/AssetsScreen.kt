@@ -30,19 +30,13 @@ import com.financeos.app.models.AccountType
 
 @Composable
 fun AssetsScreen(
-
     accounts: List<Account>,
-
     totalAssets: Double,
-
     totalLiabilities: Double,
-
     netWorth: Double,
-
-    onAddAccount: () -> Unit,
-
+    onAddAccountClick: () -> Unit,
+    onAccountClick: (String) -> Unit,
     onBack: () -> Unit
-
 ) {
 
     Column(

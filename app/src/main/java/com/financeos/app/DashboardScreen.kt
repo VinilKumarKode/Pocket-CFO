@@ -17,7 +17,8 @@ fun DashboardScreen(
     state: PocketCFOState,
     onNavigateToExpense: () -> Unit,
     onNavigateToIncome: () -> Unit,
-    onNavigateToAssets: () -> Unit
+    onNavigateToAssets: () -> Unit,
+    onNavigateToAnalytics: () -> Unit // Added new navigation trigger
 ) {
     Column(
         modifier = Modifier
@@ -48,11 +49,11 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Income", style = MaterialTheme.typography.labelMedium)
+                        Text("All-Time Income", style = MaterialTheme.typography.labelMedium)
                         Text("₹${"%.2f".format(state.totalIncome)}", color = MaterialTheme.colorScheme.primary)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("Expense", style = MaterialTheme.typography.labelMedium)
+                        Text("All-Time Expense", style = MaterialTheme.typography.labelMedium)
                         Text("₹${"%.2f".format(state.totalExpense)}", color = MaterialTheme.colorScheme.error)
                     }
                 }
@@ -61,7 +62,7 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Quick Actions
+        // Quick Actions Row 1
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -72,14 +73,25 @@ fun DashboardScreen(
             Button(onClick = onNavigateToIncome, modifier = Modifier.weight(1f)) {
                 Text("+ Income")
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Quick Actions Row 2
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             OutlinedButton(onClick = onNavigateToAssets, modifier = Modifier.weight(1f)) {
                 Text("Assets")
+            }
+            FilledTonalButton(onClick = onNavigateToAnalytics, modifier = Modifier.weight(1f)) {
+                Text("Analytics")
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Professional Transaction Ledger
         Text(
             text = "Recent Transactions",
             style = MaterialTheme.typography.titleLarge,
@@ -96,7 +108,6 @@ fun DashboardScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                // This line is now fixed
                 items(state.transactions.sortedByDescending { it.timestamp }) { transaction ->
                     TransactionCard(transaction = transaction)
                 }
