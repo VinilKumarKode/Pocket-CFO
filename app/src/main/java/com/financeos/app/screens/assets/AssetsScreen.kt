@@ -34,10 +34,11 @@ fun AssetsScreen(
     totalAssets: Double,
     totalLiabilities: Double,
     netWorth: Double,
-    onAddAccountClick: () -> Unit,
+    onAddAccount: () -> Unit, // Add this line
     onAccountClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
+    // ... rest of your code
 
     Column(
 

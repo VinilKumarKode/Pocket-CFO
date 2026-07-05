@@ -55,8 +55,9 @@ fun TransactionCard(transaction: Transaction) {
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
+                // Replace the Text block at line 59 with this:
                 Text(
-                    text = transaction.timestamp.format(DateTimeFormatter.ofPattern("MMM dd, yyyy • HH:mm")),
+                    text = java.text.SimpleDateFormat("MMM dd, yyyy • HH:mm", java.util.Locale.getDefault()).format(java.util.Date(transaction.timestamp)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )

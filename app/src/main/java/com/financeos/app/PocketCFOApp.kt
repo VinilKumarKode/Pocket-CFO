@@ -54,7 +54,7 @@ fun PocketCFOApp() {
                     totalAssets = appState.totalAssets,
                     totalLiabilities = appState.totalLiabilities,
                     netWorth = appState.netWorth,
-                    onAddAccountClick = { appState.openAddAccount() },
+                    onAddAccount = { appState.openAddAccount() }, // Connect the command here
                     onAccountClick = { accountId -> appState.openAccountDetails(accountId) },
                     onBack = { appState.openDashboard() }
                 )

@@ -1,6 +1,5 @@
 package com.financeos.app.models
 
-import java.time.LocalDateTime
 import java.util.UUID
 
 data class Transaction(
@@ -9,10 +8,15 @@ data class Transaction(
     val category: String,
     val notes: String,
     val type: TransactionType,
-    val timestamp: LocalDateTime = LocalDateTime.now(),
-    val accountId: String? = null // This links the transaction to a specific account
+    val timestamp: Long = System.currentTimeMillis(), // Using Long instead of LocalDateTime
+    val accountId: String? = null
 )
 
 enum class TransactionType {
     INCOME, EXPENSE
+}
+
+object TransactionCategories {
+    val EXPENSE_CATEGORIES = listOf("Food", "Fuel", "Shopping", "Medical", "Travel", "Bills", "Other")
+    val INCOME_CATEGORIES = listOf("Salary", "Investment", "Bonus", "Other")
 }
