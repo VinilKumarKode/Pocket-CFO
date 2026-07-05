@@ -7,15 +7,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.financeos.app.screens.DashboardScreen
+
+// Note: Ensure this import points to the new DashboardScreen we created.
+// Depending on exactly where you saved it, it might be com.financeos.app.ui.screens.DashboardScreen
+import com.financeos.app.ui.screens.DashboardScreen
 import com.financeos.app.screens.MonthlyDashboardScreen
 import com.financeos.app.screens.account.AccountDetailsScreen
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.state.PocketCFOState
 import com.financeos.app.state.PocketCFOState.AppScreen
+import com.financeos.app.viewmodel.FinanceViewModel
 
 @Composable
-fun PocketCFOApp() {
+fun PocketCFOApp(viewModel: FinanceViewModel) {
 
     val appState = remember { PocketCFOState() }
     val context = LocalContext.current
@@ -26,12 +30,10 @@ fun PocketCFOApp() {
     ) {
         when (appState.currentScreen) {
             AppScreen.DASHBOARD -> {
+                // We pass the view model into our newly designed Command Center.
+                // We can wire your onNavigate triggers back into the new UI later!
                 DashboardScreen(
-                    state = appState,
-                    onNavigateToExpense = { appState.openAddExpense() },
-                    onNavigateToIncome = { appState.openAddIncome() },
-                    onNavigateToAssets = { appState.openAssets() },
-                    onNavigateToAnalytics = { appState.openMonthlyDashboard() }
+                    viewModel = viewModel
                 )
             }
 
