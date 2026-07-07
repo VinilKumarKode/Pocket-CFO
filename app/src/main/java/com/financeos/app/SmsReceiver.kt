@@ -67,19 +67,25 @@ class SmsReceiver : BroadcastReceiver() {
             merchant = merchantMatcher.group(1)?.trim() ?: "Unknown Merchant"
         }
 
-        // 5. Save to Database: If a valid amount was found, officially log it.
+// 5. Save to Database: If a valid amount was found, officially log it.
         if (amount > 0) {
+
+            val smartCategory = CategoryEngine.categorizeMerchant(merchant)
+
+            // NEW: The CFO calculates exactly how much you earned on this swipe
+            val calculatedRewards = YieldEngine.calculateRewardValue(amount, smartCategory, paymentMethod)
+
             val transaction = Transaction(
                 amount = amount,
                 type = "Debit",
-                category = "Uncategorized", // We will build the smart-category engine later
+                category = smartCategory,
                 date = System.currentTimeMillis(),
                 paymentMethod = paymentMethod,
-                rewardPointsEarned = 0.0, // Base value until the Scraper logic is applied
+                rewardPointsEarned = calculatedRewards, // <--- This line is updated!
                 description = merchant,
-                isReconciled = false // CFO Flag: Needs statement verification
+                isReconciled = false
             )
-
+            // ... (saving logic remains the same)
             // Save to local Room Database using a Background Coroutine so the phone UI doesn't freeze
             CoroutineScope(Dispatchers.IO).launch {
                 val db = FinanceDatabase.getDatabase(context)

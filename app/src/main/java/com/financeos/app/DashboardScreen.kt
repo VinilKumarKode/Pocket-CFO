@@ -12,13 +12,18 @@ import com.financeos.app.viewmodel.FinanceViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(viewModel: FinanceViewModel) {
-    // This securely observes your Room database in real-time
+    // This securely observes your local Room database in real-time
     val transactions by viewModel.transactions.collectAsState()
+
+    // CFO Calculations: The app does the math instantly as data arrives
+    val totalSpends = transactions.filter { it.type == "Debit" }.sumOf { it.amount }
+    val unreconciledCount = transactions.count { !it.isReconciled }
+    val totalRewards = transactions.sumOf { it.rewardPointsEarned ?: 0.0 }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Command Center") },
+                title = { Text("CFO Command Center") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -34,30 +39,39 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // Placeholder: Cash Flow Overview Card
+            // 1. Cash Flow Overview
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Net Cash Flow", style = MaterialTheme.typography.titleMedium)
-                    Text("₹ 0.00", style = MaterialTheme.typography.headlineLarge)
+                    Text("Total Spends", style = MaterialTheme.typography.titleMedium)
+                    Text("₹ ${"%.2f".format(totalSpends)}", style = MaterialTheme.typography.headlineLarge)
                 }
             }
 
-            // Placeholder: Audit & Reconciliation Warning
+            // 2. Audit & Reconciliation Warning
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                colors = CardDefaults.cardColors(
+                    // Dynamically turns red if you have missing receipts!
+                    containerColor = if (unreconciledCount > 0) MaterialTheme.colorScheme.errorContainer
+                    else MaterialTheme.colorScheme.secondaryContainer
+                )
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Pending Verification", style = MaterialTheme.typography.titleMedium)
-                    Text("0 Unreconciled Entries", style = MaterialTheme.typography.bodyLarge)
+                    Text("Audit Status", style = MaterialTheme.typography.titleMedium)
+                    Text("$unreconciledCount Unreconciled Entries", style = MaterialTheme.typography.bodyLarge)
+                    if (unreconciledCount > 0) {
+                        Text("Awaiting statement verification.", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        Text("All books balanced.", style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
 
-            // Placeholder: Reward Yield Optimizer
+            // 3. Reward Yield Optimizer
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Credit Card Rewards Yield", style = MaterialTheme.typography.titleMedium)
-                    Text("Tracking active...", style = MaterialTheme.typography.bodyLarge)
+                    Text("Total Rewards Generated", style = MaterialTheme.typography.titleMedium)
+                    Text("₹ ${"%.2f".format(totalRewards)}", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

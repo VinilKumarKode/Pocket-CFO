@@ -53,6 +53,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.material.icons)
+    implementation("org.jsoup:jsoup:1.17.2")
 
     // Re-adding your Room Database via the Version Catalog
     implementation(libs.androidx.room.runtime)
