@@ -1,22 +1,21 @@
 package com.financeos.app.models
 
-import java.util.UUID
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
+@Entity(tableName = "transactions")
 data class Transaction(
-    val id: String = UUID.randomUUID().toString(),
-    val amount: Double,
-    val category: String,
-    val notes: String,
-    val type: TransactionType,
-    val timestamp: Long = System.currentTimeMillis(), // Using Long instead of LocalDateTime
-    val accountId: String? = null
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val amount: Double = 0.0,
+    val type: String = "",
+    val category: String = "",
+    val isReconciled: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis(),
+    val accountId: String = "",
+    val date: Long = System.currentTimeMillis(),
+    val paymentMethod: String = "",
+    val rewardPointsEarned: Double = 0.0,
+    val description: String = "",
+    val sender: String = "Unknown",
+    val rawMessage: String = "No original text saved."
 )
-
-enum class TransactionType {
-    INCOME, EXPENSE
-}
-
-object TransactionCategories {
-    val EXPENSE_CATEGORIES = listOf("Food", "Fuel", "Shopping", "Medical", "Travel", "Bills", "Other")
-    val INCOME_CATEGORIES = listOf("Salary", "Investment", "Bonus", "Other")
-}

@@ -11,15 +11,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.financeos.app.models.Transaction
-import com.financeos.app.models.TransactionType
+import com.financeos.app.data.Transaction
 
 @Composable
 fun TransactionCard(
     transaction: Transaction,
-    onClick: () -> Unit // This tells the card it can be clicked
+    onClick: () -> Unit
 ) {
-    val isIncome = transaction.type == TransactionType.INCOME
+    // FIXED: Checking against the "INCOME" string
+    val isIncome = transaction.type == "INCOME"
     val amountColor = if (isIncome) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
     val prefix = if (isIncome) "+" else "-"
     val badgeContainerColor = if (isIncome) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
@@ -28,7 +28,7 @@ fun TransactionCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
-            .clickable { onClick() }, // This activates the click
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
@@ -40,8 +40,9 @@ fun TransactionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = transaction.category, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                if (transaction.notes.isNotBlank()) {
-                    Text(text = transaction.notes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // FIXED: Requesting 'description' instead of 'notes' from the database
+                if (transaction.description.isNotBlank()) {
+                    Text(text = transaction.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Column(horizontalAlignment = Alignment.End) {

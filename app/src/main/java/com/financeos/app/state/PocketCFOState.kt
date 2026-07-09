@@ -8,8 +8,7 @@ import androidx.compose.runtime.setValue
 import com.financeos.app.models.Account
 import com.financeos.app.models.AccountType
 import com.financeos.app.models.CreditCard
-import com.financeos.app.models.Transaction
-import com.financeos.app.models.TransactionType
+import com.financeos.app.data.Transaction
 import java.util.Calendar
 
 class PocketCFOState {
@@ -29,8 +28,9 @@ class PocketCFOState {
     val transactions = mutableStateListOf<Transaction>()
     val accounts = mutableStateListOf<Account>()
 
-    val totalIncome: Double get() = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val totalExpense: Double get() = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    // FIXED: Now checking against the String "INCOME" and "EXPENSE"
+    val totalIncome: Double get() = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
+    val totalExpense: Double get() = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
     val totalAssets: Double get() = accounts.filter { !it.isLiability }.sumOf { it.balance }
     val totalLiabilities: Double get() = accounts.filter { it.isLiability }.sumOf { it.balance }
     val netWorth: Double get() = totalAssets - totalLiabilities + totalIncome - totalExpense
@@ -48,8 +48,9 @@ class PocketCFOState {
             }
         }
 
-    val monthlyIncome: Double get() = currentMonthTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val monthlyExpense: Double get() = currentMonthTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    // FIXED: String checks applied here too
+    val monthlyIncome: Double get() = currentMonthTransactions.filter { it.type == "INCOME" }.sumOf { it.amount }
+    val monthlyExpense: Double get() = currentMonthTransactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
     val monthlySavings: Double get() = monthlyIncome - monthlyExpense
     val burnRate: Double get() {
         val day = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
@@ -68,12 +69,13 @@ class PocketCFOState {
         accounts.add(Account(name = name, type = type, balance = balance, institution = institution))
     }
 
+    // FIXED: Mapping the 'notes' input to the 'description' database field, and setting type as a String
     fun addExpense(amount: Double, category: String, notes: String, accountId: String? = null) {
-        transactions.add(0, Transaction(amount = amount, category = category, notes = notes, type = TransactionType.EXPENSE, accountId = accountId))
+        transactions.add(0, Transaction(amount = amount, category = category, description = notes, type = "EXPENSE", accountId = accountId ?: ""))
     }
 
     fun addIncome(amount: Double, source: String, notes: String, accountId: String? = null) {
-        transactions.add(0, Transaction(amount = amount, category = source, notes = notes, type = TransactionType.INCOME, accountId = accountId))
+        transactions.add(0, Transaction(amount = amount, category = source, description = notes, type = "INCOME", accountId = accountId ?: ""))
     }
 
     fun startDiscovery() { discoveryStatus = "Scanning..." }

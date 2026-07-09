@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.financeos.app.models.TransactionCategories
 import com.financeos.app.state.PocketCFOState
+import com.financeos.app.data.Transaction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

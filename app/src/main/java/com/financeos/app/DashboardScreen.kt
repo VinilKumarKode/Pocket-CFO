@@ -1,5 +1,7 @@
-package com.financeos.app.ui.screens
+package com.financeos.app
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,26 +11,29 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.financeos.app.viewmodel.FinanceViewModel
+// FIXED: Pointing strictly to the database folder!
+import com.financeos.app.data.Transaction
+import com.financeos.app.data.FinanceDatabase
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(viewModel: FinanceViewModel) {
-    // We are using temporary test data so you can see exactly how the Audit works on your phone
-    var pendingReceipts by remember {
-        mutableStateOf(
-            listOf(
-                "Zomato - ₹450.00 (Axis Bank)",
-                "HPCL Petrol - ₹1200.00 (SBI Card)",
-                "Amazon - ₹899.00 (Jupiter)"
-            )
-        )
-    }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    val totalSpends = 2549.00 // Temporary fake total
+    val allTransactions by viewModel.transactions.collectAsState(initial = emptyList())
+
+    val totalSpends = allTransactions.filter { it.type == "Debit" }.sumOf { it.amount }
+    val pendingReceipts = allTransactions.filter { !it.isReconciled }
     val unreconciledCount = pendingReceipts.size
-    val totalRewards = 65.50 // Temporary fake rewards
+    val totalRewards = allTransactions.sumOf { it.rewardPointsEarned ?: 0.0 }
 
     Scaffold(
         topBar = {
@@ -49,7 +54,30 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // 1. Cash Flow Overview
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val db = FinanceDatabase.getDatabase(context)
+                        val simulatedTransaction = Transaction(
+                            amount = 1500.00,
+                            type = "Debit",
+                            category = "Groceries",
+                            date = System.currentTimeMillis(),
+                            paymentMethod = "Card *1234",
+                            rewardPointsEarned = 15.0,
+                            description = "Amazon",
+                            isReconciled = false,
+                            sender = "AD-HDFCBK",
+                            rawMessage = "Rs. 1500.00 debited from a/c *1234 at Amazon on 07-Jul-26. Ref: 89347593. Not you? Call 1800-456-7890."
+                        )
+                        db.transactionDao().insertTransaction(simulatedTransaction)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Simulate Received Bank SMS")
+            }
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Total Spends This Month", style = MaterialTheme.typography.titleMedium)
@@ -57,68 +85,58 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                 }
             }
 
-            // 2. Audit & Reconciliation Warning
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (unreconciledCount > 0) MaterialTheme.colorScheme.errorContainer
-                    else MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Shadow Statement Audit", style = MaterialTheme.typography.titleMedium)
-                    Text("$unreconciledCount Unreconciled Entries", style = MaterialTheme.typography.bodyLarge)
-
-                    if (unreconciledCount > 0) {
-                        Text("Please cross-check these with your bank statement.", style = MaterialTheme.typography.bodySmall)
-                    } else {
-                        Text("All books balanced. Your CFO is happy.", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-
-            // 3. THE NEW FEATURE: The Audit List
-            // This list only shows up if you have missing receipts!
             if (unreconciledCount > 0) {
                 Text("Pending Verifications:", style = MaterialTheme.typography.titleSmall)
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f) // Takes up remaining space on screen
+                    modifier = Modifier.weight(1f)
                 ) {
                     items(pendingReceipts) { receipt ->
+                        var isExpanded by remember { mutableStateOf(false) }
+
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { isExpanded = !isExpanded },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(16.dp)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(receipt, modifier = Modifier.weight(1f))
-
-                                // The Reconcile Button
-                                IconButton(
-                                    onClick = {
-                                        // This simulates checking it against the bank and marking it safe
-                                        pendingReceipts = pendingReceipts.filter { it != receipt }
-                                    }
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = "Mark as Reconciled",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                    Text("${receipt.description} - ₹${receipt.amount}\n(${receipt.paymentMethod})", modifier = Modifier.weight(1f))
+
+                                    IconButton(onClick = { /* Save logic coming next! */ }) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = "Mark as Reconciled",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+
+                                AnimatedVisibility(visible = isExpanded) {
+                                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        val dateString = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(receipt.date))
+
+                                        Text("Sender: ${receipt.sender}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                        Text("Date: $dateString", style = MaterialTheme.typography.labelSmall)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text("Raw SMS:", style = MaterialTheme.typography.labelSmall)
+                                        Text(receipt.rawMessage, style = MaterialTheme.typography.bodySmall)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             } else {
-                // 4. Reward Yield Optimizer (This shows up nicely once you finish the audit!)
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Total Rewards Generated", style = MaterialTheme.typography.titleMedium)

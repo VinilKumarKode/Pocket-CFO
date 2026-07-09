@@ -19,18 +19,18 @@ interface TransactionDao {
     suspend fun updateTransaction(transaction: Transaction)
 
     // Delete a specific transaction
-    @Query("DELETE FROM transactions_table WHERE id = :transactionId")
+    @Query("DELETE FROM transactions WHERE id = :transactionId")
     suspend fun deleteTransactionById(transactionId: Int)
 
     // Get a live stream of all transactions, sorted by most recent
-    @Query("SELECT * FROM transactions_table ORDER BY date DESC")
+    @Query("SELECT * FROM transactions ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
 
     // Identify transactions that haven't been verified against a statement
-    @Query("SELECT * FROM transactions_table WHERE isReconciled = 0 ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE isReconciled = 0 ORDER BY date DESC")
     fun getUnreconciledTransactions(): Flow<List<Transaction>>
 
     // Calculate total rewards earned for a specific payment method
-    @Query("SELECT SUM(rewardPointsEarned) FROM transactions_table WHERE paymentMethod = :method")
+    @Query("SELECT SUM(rewardPointsEarned) FROM transactions WHERE paymentMethod = :method")
     fun getTotalRewardsForPaymentMethod(method: String): Flow<Double?>
 }

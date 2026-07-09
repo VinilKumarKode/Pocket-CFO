@@ -16,16 +16,12 @@ import com.financeos.app.ui.components.TransactionCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountDetailsScreen(
-    state: PocketCFOState,
-    onBack: () -> Unit
-) {
-    // 1. Identify which account the user clicked
+fun AccountDetailsScreen(state: PocketCFOState, onBack: () -> Unit) {
     val accountId = state.selectedAccountId
     val account = state.accounts.find { it.id.toString() == accountId }
 
-    // 2. Filter the ledger to ONLY show transactions for this account
-    val accountTransactions = state.transactions
+    // Explicitly casting the filter to a List of Transactions to stop the "inference" error
+    val accountTransactions: List<com.financeos.app.data.Transaction> = state.transactions
         .filter { it.accountId == accountId }
         .sortedByDescending { it.timestamp }
 
@@ -41,52 +37,27 @@ fun AccountDetailsScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp)) {
             if (account != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                ) {
+                Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text(text = "Current Balance", style = MaterialTheme.typography.labelMedium)
-                        Text(
-                            text = "₹${"%.2f".format(account.balance)}",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = "Institution: ${account.institution}", style = MaterialTheme.typography.bodyMedium)
-                        Text(text = "Type: ${account.type.name}", style = MaterialTheme.typography.bodyMedium)
+                        Text("Current Balance", style = MaterialTheme.typography.labelMedium)
+                        Text("₹${"%.2f".format(account.balance)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Account Ledger",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Text("Account Ledger", style = MaterialTheme.typography.titleLarge)
 
             if (accountTransactions.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No transactions found for this account.", color = MaterialTheme.colorScheme.outline)
+                    Text("No transactions found.")
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(accountTransactions) { transaction ->
-                        // FIXED: Added the onClick parameter here to match the new TransactionCard
-                        TransactionCard(
-                            transaction = transaction,
-                            onClick = { state.deleteTransaction(transaction) }
-                        )
+                        TransactionCard(transaction = transaction, onClick = { state.deleteTransaction(transaction) })
                     }
                 }
             }
