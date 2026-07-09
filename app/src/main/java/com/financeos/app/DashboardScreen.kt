@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.financeos.app.viewmodel.FinanceViewModel
-// FIXED: Pointing strictly to the database folder!
 import com.financeos.app.data.Transaction
 import com.financeos.app.data.FinanceDatabase
 import kotlinx.coroutines.launch
@@ -109,7 +108,16 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                                 ) {
                                     Text("${receipt.description} - ₹${receipt.amount}\n(${receipt.paymentMethod})", modifier = Modifier.weight(1f))
 
-                                    IconButton(onClick = { /* Save logic coming next! */ }) {
+                                    // --- THE RECONCILIATION ENGINE ---
+                                    IconButton(onClick = {
+                                        coroutineScope.launch {
+                                            val db = FinanceDatabase.getDatabase(context)
+                                            // 1. Make an exact copy of this receipt, but mark it verified
+                                            val verifiedReceipt = receipt.copy(isReconciled = true)
+                                            // 2. Tell the database to update its records
+                                            db.transactionDao().updateTransaction(verifiedReceipt)
+                                        }
+                                    }) {
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = "Mark as Reconciled",
