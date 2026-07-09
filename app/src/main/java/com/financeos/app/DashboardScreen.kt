@@ -1,5 +1,9 @@
 package com.financeos.app
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.financeos.app.viewmodel.FinanceViewModel
 import com.financeos.app.data.Transaction
 import com.financeos.app.data.FinanceDatabase
@@ -27,9 +32,26 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    // --- NEW PERMISSION LOGIC ---
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted! The app can now listen to SMS.
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        // When the screen loads, check if we already have permission. If not, ask for it!
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissionLauncher.launch(Manifest.permission.RECEIVE_SMS)
+        }
+    }
+    // ----------------------------
+
     val allTransactions by viewModel.transactions.collectAsState(initial = emptyList())
 
-    val totalSpends = allTransactions.filter { it.type == "Debit" }.sumOf { it.amount }
+    val totalSpends = allTransactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
     val pendingReceipts = allTransactions.filter { !it.isReconciled }
     val unreconciledCount = pendingReceipts.size
     val totalRewards = allTransactions.sumOf { it.rewardPointsEarned ?: 0.0 }
@@ -59,7 +81,7 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                         val db = FinanceDatabase.getDatabase(context)
                         val simulatedTransaction = Transaction(
                             amount = 1500.00,
-                            type = "Debit",
+                            type = "EXPENSE",
                             category = "Groceries",
                             date = System.currentTimeMillis(),
                             paymentMethod = "Card *1234",
@@ -108,13 +130,10 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                                 ) {
                                     Text("${receipt.description} - ₹${receipt.amount}\n(${receipt.paymentMethod})", modifier = Modifier.weight(1f))
 
-                                    // --- THE RECONCILIATION ENGINE ---
                                     IconButton(onClick = {
                                         coroutineScope.launch {
                                             val db = FinanceDatabase.getDatabase(context)
-                                            // 1. Make an exact copy of this receipt, but mark it verified
                                             val verifiedReceipt = receipt.copy(isReconciled = true)
-                                            // 2. Tell the database to update its records
                                             db.transactionDao().updateTransaction(verifiedReceipt)
                                         }
                                     }) {
