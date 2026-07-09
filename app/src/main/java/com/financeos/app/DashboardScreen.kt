@@ -82,14 +82,14 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                         val simulatedTransaction = Transaction(
                             amount = 1500.00,
                             type = "EXPENSE",
-                            category = "Groceries",
+                            category = com.financeos.app.utils.CategoryEngine.getCategoryForMerchant("Zomato Online"), // Testing the engine!
                             date = System.currentTimeMillis(),
                             paymentMethod = "Card *1234",
                             rewardPointsEarned = 15.0,
-                            description = "Amazon",
+                            description = "Zomato Online",
                             isReconciled = false,
                             sender = "AD-HDFCBK",
-                            rawMessage = "Rs. 1500.00 debited from a/c *1234 at Amazon on 07-Jul-26. Ref: 89347593. Not you? Call 1800-456-7890."
+                            rawMessage = "Rs. 1500.00 debited from a/c *1234 at Zomato Online on 07-Jul-26. Ref: 89347593. Not you? Call 1800-456-7890."
                         )
                         db.transactionDao().insertTransaction(simulatedTransaction)
                     }

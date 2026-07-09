@@ -41,7 +41,7 @@ object SmsParser {
         return Transaction(
             amount = amount,
             type = "EXPENSE",
-            category = "Uncategorized", // We can add an auto-categorizer later!
+            category = "smartcategory", // Fixed
             date = System.currentTimeMillis(),
             paymentMethod = paymentMethod,
             description = merchant,
