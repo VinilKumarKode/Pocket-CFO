@@ -21,5 +21,9 @@ data class Transaction(
     val rewardPointsEarned: Double = 0.0,
     val description: String = "",
     val sender: String = "Unknown",
-    val rawMessage: String = "No original text saved."
+    val rawMessage: String = "No original text saved.",
+
+    // --- THE NEW LINK FOR THE FINANCIAL PROFILE ---
+    // This allows the transaction to tie directly back to a specific Bank/Card!
+    val linkedEntityId: Int? = null
 )
