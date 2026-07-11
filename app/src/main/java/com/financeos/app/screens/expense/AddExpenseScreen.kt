@@ -1,82 +1,103 @@
 package com.financeos.app.screens.expense
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.financeos.app.models.TransactionCategories
-import com.financeos.app.state.PocketCFOState
+import com.financeos.app.data.FinanceDatabase
 import com.financeos.app.data.Transaction
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(
-    state: PocketCFOState,
-    onBack: () -> Unit
-) {
+fun AddExpenseScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // These remember what you type into the boxes
     var amount by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(TransactionCategories.EXPENSE_CATEGORIES[0]) }
-    var expanded by remember { mutableStateOf(false) }
+    var category by remember { mutableStateOf("Cash Spend") }
+    var description by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Expense") },
+                title = { Text("Add Manual Expense") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
-                }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
         }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
-                label = { Text("Amount") },
+                label = { Text("Amount (₹)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Category Dropdown
-            Box {
-                OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(selectedCategory)
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    TransactionCategories.EXPENSE_CATEGORIES.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category) },
-                            onClick = {
-                                selectedCategory = category
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Notes") },
+                value = category,
+                onValueChange = { category = it },
+                label = { Text("Category (e.g., Food, Travel)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description (e.g., Chai, Auto)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.weight(1f)) // Pushes the button to the bottom
 
             Button(
                 onClick = {
-                    state.addExpense(amount.toDoubleOrNull() ?: 0.0, selectedCategory, notes)
-                    onBack()
+                    val amountDouble = amount.toDoubleOrNull() ?: 0.0
+                    if (amountDouble > 0) {
+                        coroutineScope.launch {
+                            val db = FinanceDatabase.getDatabase(context)
+
+                            // Build the manual transaction
+                            val manualTransaction = Transaction(
+                                amount = amountDouble,
+                                type = "EXPENSE",
+                                category = category,
+                                date = System.currentTimeMillis(),
+                                paymentMethod = "Cash",
+                                description = description,
+                                isReconciled = true, // Cash entries are pre-approved!
+                                sender = "Manual Entry",
+                                rawMessage = "User entered manually"
+                            )
+
+                            // Save it and go back
+                            db.transactionDao().insertTransaction(manualTransaction)
+                            onBack()
+                        }
+                    }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 Text("Save Expense")
             }

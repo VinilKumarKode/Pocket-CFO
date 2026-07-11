@@ -2,6 +2,7 @@ package com.financeos.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +23,7 @@ import androidx.core.content.ContextCompat
 import com.financeos.app.viewmodel.FinanceViewModel
 import com.financeos.app.data.Transaction
 import com.financeos.app.data.FinanceDatabase
+import com.financeos.app.utils.CategoryEngine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,26 +31,23 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: FinanceViewModel) {
+fun DashboardScreen(
+    viewModel: FinanceViewModel,
+    onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToAddExpense: () -> Unit = {} // <-- New wire for the Plus button
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // --- NEW PERMISSION LOGIC ---
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            // Permission granted! The app can now listen to SMS.
-        }
-    }
+    ) { isGranted -> }
 
     LaunchedEffect(Unit) {
-        // When the screen loads, check if we already have permission. If not, ask for it!
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             permissionLauncher.launch(Manifest.permission.RECEIVE_SMS)
         }
     }
-    // ----------------------------
 
     val allTransactions by viewModel.transactions.collectAsState(initial = emptyList())
 
@@ -65,6 +65,16 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
+        },
+        // --- THE NEW PLUS BUTTON ---
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { onNavigateToAddExpense() },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Manual Expense")
+            }
         }
     ) { paddingValues ->
         Column(
@@ -82,14 +92,14 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                         val simulatedTransaction = Transaction(
                             amount = 1500.00,
                             type = "EXPENSE",
-                            category = com.financeos.app.utils.CategoryEngine.getCategoryForMerchant("Zomato Online"), // Testing the engine!
+                            category = CategoryEngine.getCategoryForMerchant("Zomato Online"),
                             date = System.currentTimeMillis(),
                             paymentMethod = "Card *1234",
                             rewardPointsEarned = 15.0,
                             description = "Zomato Online",
                             isReconciled = false,
                             sender = "AD-HDFCBK",
-                            rawMessage = "Rs. 1500.00 debited from a/c *1234 at Zomato Online on 07-Jul-26. Ref: 89347593. Not you? Call 1800-456-7890."
+                            rawMessage = "Rs. 1500.00 debited from a/c *1234 at Zomato Online on 07-Jul-26."
                         )
                         db.transactionDao().insertTransaction(simulatedTransaction)
                     }
@@ -170,6 +180,20 @@ fun DashboardScreen(viewModel: FinanceViewModel) {
                         Text("₹ ${"%.2f".format(totalRewards)}", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            if (unreconciledCount > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Button(
+                onClick = { onNavigateToAnalytics() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                Text("View Detailed Analytics")
             }
         }
     }

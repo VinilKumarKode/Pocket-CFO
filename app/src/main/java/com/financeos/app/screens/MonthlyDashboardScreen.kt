@@ -1,38 +1,61 @@
-package com.financeos.app.screens
+package com.financeos.app.screens.income
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.financeos.app.viewmodel.FinanceViewModel
 import com.financeos.app.state.PocketCFOState
-import java.time.LocalDateTime
-import java.time.format.TextStyle
-import java.util.Locale
+import com.financeos.app.utils.DataExporter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonthlyDashboardScreen(
-    state: PocketCFOState,
-    onBack: () -> Unit
+    viewModel: FinanceViewModel,
+    state: PocketCFOState
 ) {
-    val currentMonthName = LocalDateTime.now().month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    val context = LocalContext.current
+    val allTransactions by viewModel.transactions.collectAsState(initial = emptyList())
+    val approvedExpenses = allTransactions.filter { it.type == "EXPENSE" && it.isReconciled }
+    val totalApprovedSpend = approvedExpenses.sumOf { it.amount }
+
+    val categoryTotals = approvedExpenses
+        .groupBy { it.category }
+        .mapValues { (_, transactions) -> transactions.sumOf { it.amount } }
+        .toList()
+        .sortedByDescending { it.second }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("$currentMonthName Analytics") },
+                title = { Text("Analytics & Insights") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = { state.openDashboard() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back to Dashboard")
                     }
-                }
+                },
+                // --- THE NEW EXPORT BUTTON IN THE TOP RIGHT ---
+                actions = {
+                    IconButton(onClick = {
+                        DataExporter.exportDatabaseToCSV(context, allTransactions)
+                    }) {
+                        Icon(Icons.Default.Share, contentDescription = "Export to CSV")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             )
         }
     ) { paddingValues ->
@@ -43,61 +66,56 @@ fun MonthlyDashboardScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cash Flow Summary
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                MetricCard(
-                    title = "Income",
-                    amount = state.monthlyIncome,
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.weight(1f)
-                )
-                MetricCard(
-                    title = "Expense",
-                    amount = state.monthlyExpense,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.weight(1f)
-                )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Total Approved Spends", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = "₹ ${"%.2f".format(totalApprovedSpend)}",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
 
-            // Savings & Burn Rate
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                val savingsColor = if (state.monthlySavings >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                MetricCard(
-                    title = "Net Savings",
-                    amount = state.monthlySavings,
-                    color = savingsColor,
-                    modifier = Modifier.weight(1f)
-                )
-                MetricCard(
-                    title = "Daily Burn Rate",
-                    amount = state.burnRate,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
+            Text("Spending by Category", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
 
-@Composable
-fun MetricCard(title: String, amount: Double, color: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "₹${"%.2f".format(amount)}",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
+            if (categoryTotals.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No approved expenses yet. Reconcile some receipts on your dashboard!", style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(categoryTotals) { (category, amount) ->
+                        val percentage = if (totalApprovedSpend > 0) (amount / totalApprovedSpend).toFloat() else 0f
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(category, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                Text("₹${"%.2f".format(amount)}", style = MaterialTheme.typography.bodyLarge)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            LinearProgressIndicator(
+                                progress = { percentage },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
