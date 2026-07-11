@@ -1,203 +1,135 @@
 package com.financeos.app.screens.assets
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.financeos.app.models.Account
-import com.financeos.app.models.AccountType
+import com.financeos.app.viewmodel.FinanceViewModel
+import com.financeos.app.data.FinancialEntity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AssetsScreen(
-    accounts: List<Account>,
-    totalAssets: Double,
-    totalLiabilities: Double,
-    netWorth: Double,
-    onAddAccount: () -> Unit, // Add this line
-    onAccountClick: (String) -> Unit,
+    viewModel: FinanceViewModel,
     onBack: () -> Unit
 ) {
-    // ... rest of your code
+    // 1. Listen to the database for discovered accounts
+    val entities by viewModel.financialEntities.collectAsState(initial = emptyList())
 
-    Column(
+    // 2. Separate them into Assets and Liabilities automatically
+    val bankAccounts = entities.filter { it.type == "BANK_ACCOUNT" }
+    val creditCards = entities.filter { it.type == "CREDIT_CARD" }
 
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    // 3. Calculate Live Net Worth!
+    val totalAssets = bankAccounts.sumOf { it.balance }
+    val totalLiabilities = creditCards.sumOf { it.balance }
+    val netWorth = totalAssets - totalLiabilities
 
-    ) {
-
-        Text(
-
-            text = "Accounts",
-
-            style = MaterialTheme.typography.headlineMedium
-
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-
-                Text(
-                    "Total Assets : ₹%.2f".format(totalAssets)
-                )
-
-                Text(
-                    "Liabilities : ₹%.2f".format(totalLiabilities)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    "Net Worth : ₹%.2f".format(netWorth),
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-            }
-
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onAddAccount
-        ) {
-
-            Text("Add Account")
-
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn {
-
-            items(accounts) { account ->
-
-                Card(
-
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-
-                ) {
-
-                    Row(
-
-                        verticalAlignment = Alignment.CenterVertically,
-
-                        modifier = Modifier.padding(16.dp)
-
-                    ) {
-
-                        Icon(
-
-                            imageVector = when (account.type) {
-
-                                AccountType.BANK ->
-                                    Icons.Default.AccountBalance
-
-                                AccountType.CREDIT_CARD ->
-                                    Icons.Default.CreditCard
-
-                                AccountType.CASH ->
-                                    Icons.Default.AttachMoney
-
-                                AccountType.WALLET ->
-                                    Icons.Default.AccountBalanceWallet
-
-                                AccountType.UPI ->
-                                    Icons.Default.Payments
-
-                                else ->
-                                    Icons.Default.TrendingUp
-
-                            },
-
-                            contentDescription = null
-
-                        )
-
-                        Column(
-                            modifier = Modifier.padding(start = 16.dp)
-                        ) {
-
-                            Text(
-                                account.name,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            Text(
-                                account.type.name.replace("_", " "),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-
-                            Text(
-                                text = "₹%.2f".format(account.balance),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            if (account.institution.isNotBlank()) {
-
-                                Text(
-                                    account.institution,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-
-                            }
-
-                        }
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Net Worth & Assets") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // --- THE LIVE NET WORTH CARD ---
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text("Live Net Worth", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = "₹ ${"%.2f".format(netWorth)}",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Assets: ₹${"%.2f".format(totalAssets)}", color = MaterialTheme.colorScheme.primary)
+                        Text("Liabilities: ₹${"%.2f".format(totalLiabilities)}", color = MaterialTheme.colorScheme.error)
+                    }
                 }
-
             }
 
+            // --- DISCOVERED BANK ACCOUNTS ---
+            if (bankAccounts.isNotEmpty()) {
+                Text("Discovered Bank Accounts", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(bankAccounts) { account ->
+                        AccountCard(account)
+                    }
+                }
+            }
+
+            // --- DISCOVERED CREDIT CARDS ---
+            if (creditCards.isNotEmpty()) {
+                Text("Discovered Credit Cards", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(creditCards) { card ->
+                        AccountCard(card)
+                    }
+                }
+            }
+
+            if (bankAccounts.isEmpty() && creditCards.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    Text("Scanning inbox for financial accounts...", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-
-            modifier = Modifier.fillMaxWidth(),
-
-            onClick = onBack
-
-        ) {
-
-            Text("Back")
-
-        }
-
     }
+}
 
+// A reusable UI component for drawing each account beautifully
+@Composable
+fun AccountCard(entity: FinancialEntity) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(entity.name, style = MaterialTheme.typography.titleMedium)
+                Text("Ending in *${entity.lastFourDigits}", style = MaterialTheme.typography.bodyMedium)
+            }
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                Text("₹ ${"%.2f".format(entity.balance)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                if (entity.creditLimit != null) {
+                    Text("Limit: ₹${"%.2f".format(entity.creditLimit)}", style = MaterialTheme.typography.labelSmall)
+                } else {
+                    Text("Available", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
 }

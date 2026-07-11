@@ -12,20 +12,22 @@ object InboxScraper {
         val db = FinanceDatabase.getDatabase(context)
         var transactionsFound = 0
 
-        // 1. Give the app a memory of the last time it synced
         val prefs = context.getSharedPreferences("PocketCFO_Prefs", Context.MODE_PRIVATE)
         val thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000)
 
-        // Default to 30 days ago if this is the very first time syncing
         val lastSyncTime = prefs.getLong("last_sync_time", thirtyDaysAgo)
         var newestMessageTime = lastSyncTime
 
+        val pastHistory = db.transactionDao().getAllTransactionsSync()
+
+        // Notice we changed "DESC" to "ASC".
+        // Reading oldest to newest ensures your live balance always reflects the MOST RECENT text!
         val cursor = context.contentResolver.query(
             Uri.parse("content://sms/inbox"),
             arrayOf("address", "body", "date"),
             null,
             null,
-            "date DESC" // Reads from newest texts to oldest
+            "date ASC"
         )
 
         cursor?.use {
@@ -38,27 +40,41 @@ object InboxScraper {
                 val body = it.getString(bodyIndex) ?: ""
                 val date = it.getLong(dateIndex)
 
-                // 2. The cut-off switch: Stop reading if we hit messages we already synced!
-                if (date <= lastSyncTime) break
+                if (date <= lastSyncTime) continue
 
-                // Keep track of the timestamp of the newest message we process
                 if (date > newestMessageTime) {
                     newestMessageTime = date
                 }
 
-                // 3. Hand the raw text to our smart parser
-                val parsedTransaction = SmsParser.parseMessage(sender, body)
+                // --- NEW: Run Brain 2 (Asset Discovery) ---
+                val parsedEntity = SmsParser.parseFinancialEntity(sender, body)
+                if (parsedEntity != null) {
+                    val existingEntity = db.financialEntityDao().findEntity(parsedEntity.name, parsedEntity.lastFourDigits)
 
+                    if (existingEntity == null) {
+                        // We discovered a completely new Bank/Card! Save it.
+                        db.financialEntityDao().insertEntity(parsedEntity)
+                    } else {
+                        // We already know about this account, just update the live balance!
+                        val updatedEntity = existingEntity.copy(
+                            balance = parsedEntity.balance,
+                            creditLimit = parsedEntity.creditLimit ?: existingEntity.creditLimit
+                        )
+                        db.financialEntityDao().insertEntity(updatedEntity)
+                    }
+                }
+
+                // --- ORIGINAL: Run Brain 1 (Transaction Engine) ---
+                val parsedTransaction = SmsParser.parseMessage(sender, body)
                 if (parsedTransaction != null) {
-                    // Keep the historical date instead of today's date
                     val historicalTx = parsedTransaction.copy(date = date)
-                    db.transactionDao().insertTransaction(historicalTx)
+                    val smartTx = LearningEngine.applyUserMemory(historicalTx, pastHistory)
+                    db.transactionDao().insertTransaction(smartTx)
                     transactionsFound++
                 }
             }
         }
 
-        // 4. Save the newest timestamp into the app's memory for next time
         prefs.edit().putLong("last_sync_time", newestMessageTime).apply()
 
         return@withContext transactionsFound

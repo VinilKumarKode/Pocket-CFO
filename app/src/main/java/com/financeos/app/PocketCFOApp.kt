@@ -24,7 +24,7 @@ import com.financeos.app.screens.income.MonthlyDashboardScreen
 import com.financeos.app.screens.account.AccountDetailsScreen
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.screens.expense.AddExpenseScreen
-import com.financeos.app.screens.SplashScreen // <-- We imported your new Splash Screen!
+import com.financeos.app.screens.SplashScreen
 import com.financeos.app.state.PocketCFOState
 import com.financeos.app.state.PocketCFOState.AppScreen
 import com.financeos.app.viewmodel.FinanceViewModel
@@ -98,14 +98,10 @@ fun PocketCFOApp(viewModel: FinanceViewModel) {
                     )
                 }
 
+                // --- THE UPDATED ASSETS WIRING ---
                 AppScreen.ASSETS -> {
                     AssetsScreen(
-                        accounts = appState.accounts,
-                        totalAssets = appState.totalAssets,
-                        totalLiabilities = appState.totalLiabilities,
-                        netWorth = appState.netWorth,
-                        onAddAccount = { appState.openAddAccount() },
-                        onAccountClick = { accountId -> appState.openAccountDetails(accountId) },
+                        viewModel = viewModel,
                         onBack = { appState.openDashboard() }
                     )
                 }

@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-
+    // This allows the Learning Engine to quickly read past transactions!
+    @Query("SELECT * FROM transactions")
+    suspend fun getAllTransactionsSync(): List<Transaction>
     // Insert a new transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction)
