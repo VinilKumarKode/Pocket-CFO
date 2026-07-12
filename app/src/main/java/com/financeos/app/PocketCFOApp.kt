@@ -78,7 +78,8 @@ fun PocketCFOApp(viewModel: FinanceViewModel) {
                                     onNavigateToAddExpense = { appState.openAddExpense() }
                                 )
                             } else {
-                                AdvisorScreen()
+                                // --- The Advisor Screen with the ViewModel passed in ---
+                                AdvisorScreen(viewModel = viewModel)
                             }
                         }
                     }
@@ -98,7 +99,6 @@ fun PocketCFOApp(viewModel: FinanceViewModel) {
                     )
                 }
 
-                // --- THE UPDATED ASSETS WIRING ---
                 AppScreen.ASSETS -> {
                     AssetsScreen(
                         viewModel = viewModel,
