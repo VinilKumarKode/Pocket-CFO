@@ -20,8 +20,6 @@ object InboxScraper {
 
         val pastHistory = db.transactionDao().getAllTransactionsSync()
 
-        // Notice we changed "DESC" to "ASC".
-        // Reading oldest to newest ensures your live balance always reflects the MOST RECENT text!
         val cursor = context.contentResolver.query(
             Uri.parse("content://sms/inbox"),
             arrayOf("address", "body", "date"),
@@ -46,16 +44,13 @@ object InboxScraper {
                     newestMessageTime = date
                 }
 
-                // --- NEW: Run Brain 2 (Asset Discovery) ---
+                // BRAIN 2: Asset Discovery
                 val parsedEntity = SmsParser.parseFinancialEntity(sender, body)
                 if (parsedEntity != null) {
                     val existingEntity = db.financialEntityDao().findEntity(parsedEntity.name, parsedEntity.lastFourDigits)
-
                     if (existingEntity == null) {
-                        // We discovered a completely new Bank/Card! Save it.
                         db.financialEntityDao().insertEntity(parsedEntity)
                     } else {
-                        // We already know about this account, just update the live balance!
                         val updatedEntity = existingEntity.copy(
                             balance = parsedEntity.balance,
                             creditLimit = parsedEntity.creditLimit ?: existingEntity.creditLimit
@@ -64,7 +59,16 @@ object InboxScraper {
                     }
                 }
 
-                // --- ORIGINAL: Run Brain 1 (Transaction Engine) ---
+                // BRAIN 3: Timeline Engine (Upcoming Bills)
+                val parsedLiability = SmsParser.parseUpcomingLiability(sender, body)
+                if (parsedLiability != null) {
+                    val existingBill = db.upcomingLiabilityDao().findPendingLiability(parsedLiability.title, parsedLiability.amountDue)
+                    if (existingBill == null) {
+                        db.upcomingLiabilityDao().insertLiability(parsedLiability)
+                    }
+                }
+
+                // BRAIN 1: Transaction Engine
                 val parsedTransaction = SmsParser.parseMessage(sender, body)
                 if (parsedTransaction != null) {
                     val historicalTx = parsedTransaction.copy(date = date)
@@ -76,7 +80,6 @@ object InboxScraper {
         }
 
         prefs.edit().putLong("last_sync_time", newestMessageTime).apply()
-
         return@withContext transactionsFound
     }
 }

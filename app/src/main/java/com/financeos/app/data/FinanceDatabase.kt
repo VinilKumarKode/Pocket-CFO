@@ -5,12 +5,17 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-// NOTICE: We added FinancialEntity::class and changed version to 2
-@Database(entities = [Transaction::class, FinancialEntity::class], version = 2, exportSchema = false)
+// Version bumped to 3, and UpcomingLiability added to the list of entities!
+@Database(
+    entities = [Transaction::class, FinancialEntity::class, UpcomingLiability::class],
+    version = 3,
+    exportSchema = false
+)
 abstract class FinanceDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
-    abstract fun financialEntityDao(): FinancialEntityDao // The new Dao!
+    abstract fun financialEntityDao(): FinancialEntityDao
+    abstract fun upcomingLiabilityDao(): UpcomingLiabilityDao // The new DAO!
 
     companion object {
         @Volatile
@@ -18,13 +23,12 @@ abstract class FinanceDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): FinanceDatabase {
             return INSTANCE ?: synchronized(this) {
-                // fallbackToDestructiveMigration() wipes the old V1 database safely so V2 can build
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     FinanceDatabase::class.java,
                     "finance_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration() // Safely wipes the V2 database to build V3
                     .build()
                 INSTANCE = instance
                 instance

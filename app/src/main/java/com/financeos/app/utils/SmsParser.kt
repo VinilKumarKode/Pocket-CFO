@@ -2,6 +2,7 @@ package com.financeos.app.utils
 
 import com.financeos.app.data.Transaction
 import com.financeos.app.data.FinancialEntity
+import com.financeos.app.data.UpcomingLiability
 
 object SmsParser {
 
@@ -100,5 +101,50 @@ object SmsParser {
             sender.contains("BOI", ignoreCase = true) -> "Bank of India"
             else -> sender.replace(Regex("[^A-Za-z]"), "").take(6)
         }
+    }
+    // --- BRAIN 3: The Timeline Engine (Upcoming Liabilities) ---
+    fun parseUpcomingLiability(sender: String, messageBody: String): UpcomingLiability? {
+        val body = messageBody.lowercase()
+
+        // 1. Check if the message is asking for money in the future
+        if (!body.contains("due") && !body.contains("emi") && !body.contains("generated")) {
+            return null
+        }
+
+        // 2. We don't want to accidentally catch a "past due" payment you already made
+        if (body.contains("paid") || body.contains("received") || body.contains("thank you")) {
+            return null
+        }
+
+        // 3. Extract the Amount Due
+        val amountRegex = Regex("(?i)(?:rs\\.?|inr|amount)\\s*([\\d,]+(?:\\.\\d+)?)")
+        val amountMatch = amountRegex.find(messageBody) ?: return null
+        val rawAmount = amountMatch.groupValues[1].replace(",", "")
+        val amount = rawAmount.toDoubleOrNull() ?: return null
+
+        val bankName = extractBankName(sender)
+
+        // 4. Categorize the type of bill
+        val type = when {
+            body.contains("emi") -> "EMI"
+            body.contains("card") || body.contains("statement") -> "CREDIT CARD"
+            else -> "BILL"
+        }
+
+        val title = "$bankName $type"
+
+        // 5. Calculate the Due Date
+        // (Note: Parsing exact dates from messy bank texts is highly complex. For this engine,
+        // we default to flagging the bill as due 7 days from the moment the bank sent the text).
+        val dueDate = System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000)
+
+        return UpcomingLiability(
+            title = title,
+            amountDue = amount,
+            dueDate = dueDate,
+            type = type,
+            isPaid = false,
+            rawMessage = messageBody
+        )
     }
 }
