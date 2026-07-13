@@ -25,6 +25,7 @@ import com.financeos.app.screens.account.AccountDetailsScreen
 import com.financeos.app.screens.assets.AssetsScreen
 import com.financeos.app.screens.expense.AddExpenseScreen
 import com.financeos.app.screens.SplashScreen
+import com.financeos.app.screens.AuthScreen
 import com.financeos.app.state.PocketCFOState
 import com.financeos.app.state.PocketCFOState.AppScreen
 import com.financeos.app.viewmodel.FinanceViewModel
@@ -32,18 +33,22 @@ import com.financeos.app.ui.screens.accounts.AdvisorScreen
 
 @Composable
 fun PocketCFOApp(viewModel: FinanceViewModel) {
-    // This acts as a gatekeeper. It starts as 'true' so the splash screen shows first.
     var showSplash by remember { mutableStateOf(true) }
+
+    // --- THE SECURITY VAULT FLAG ---
+    var isAuthenticated by remember { mutableStateOf(false) }
 
     val appState = remember { PocketCFOState() }
     val context = LocalContext.current
 
     // THE GATEKEEPER LOGIC
     if (showSplash) {
-        // Show the Splash Screen. When it finishes its 2-second timer, it sets showSplash to false.
         SplashScreen(onSplashComplete = { showSplash = false })
+    } else if (!isAuthenticated) {
+        // --- NATIVE OS AUTHENTICATION ---
+        AuthScreen(onAuthSuccess = { isAuthenticated = true })
     } else {
-        // Once showSplash is false, draw the actual app!
+        // Once showSplash is false and isAuthenticated is true, draw the actual app!
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
@@ -78,7 +83,6 @@ fun PocketCFOApp(viewModel: FinanceViewModel) {
                                     onNavigateToAddExpense = { appState.openAddExpense() }
                                 )
                             } else {
-                                // --- The Advisor Screen with the ViewModel passed in ---
                                 AdvisorScreen(viewModel = viewModel)
                             }
                         }

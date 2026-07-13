@@ -20,17 +20,22 @@ fun AddExpenseScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // These remember what you type into the boxes
+    // State variables to hold the user's input
     var amount by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Cash Spend") }
     var description by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("Miscellaneous") }
+    var paymentMethod by remember { mutableStateOf("Cash") }
+
+    // Dropdown state for clean category selection
+    val categories = listOf("Food & Dining", "Travel & Transport", "Bills & Utilities", "Shopping", "Entertainment", "Miscellaneous")
+    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Manual Expense") },
+                title = { Text("Manual Entry") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { onBack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -56,50 +61,79 @@ fun AddExpenseScreen(onBack: () -> Unit) {
             )
 
             OutlinedTextField(
-                value = category,
-                onValueChange = { category = it },
-                label = { Text("Category (e.g., Food, Travel)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description (e.g., Chai, Auto)") },
+                label = { Text("Description (e.g., Office Lunch)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.weight(1f)) // Pushes the button to the bottom
+            // --- NATIVE COMPOSE DROPDOWN MENU ---
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = {},
+                    readOnly = true, // Prevents typing, forces dropdown selection
+                    label = { Text("Category") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    categories.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            text = { Text(selectionOption) },
+                            onClick = {
+                                category = selectionOption
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            OutlinedTextField(
+                value = paymentMethod,
+                onValueChange = { paymentMethod = it },
+                label = { Text("Payment Method (e.g., Cash, Splitwise)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
 
             Button(
                 onClick = {
-                    val amountDouble = amount.toDoubleOrNull() ?: 0.0
-                    if (amountDouble > 0) {
+                    val parsedAmount = amount.toDoubleOrNull()
+                    if (parsedAmount != null && description.isNotBlank()) {
                         coroutineScope.launch {
                             val db = FinanceDatabase.getDatabase(context)
-
-                            // Build the manual transaction
-                            val manualTransaction = Transaction(
-                                amount = amountDouble,
-                                type = "EXPENSE",
-                                category = category,
-                                date = System.currentTimeMillis(),
-                                paymentMethod = "Cash",
-                                description = description,
-                                isReconciled = true, // Cash entries are pre-approved!
-                                sender = "Manual Entry",
-                                rawMessage = "User entered manually"
+                            db.transactionDao().insertTransaction(
+                                Transaction(
+                                    amount = parsedAmount,
+                                    type = "EXPENSE",
+                                    category = category,
+                                    date = System.currentTimeMillis(),
+                                    paymentMethod = paymentMethod,
+                                    description = description,
+                                    isReconciled = true, // Flagged as manually audited!
+                                    sender = "Manual Entry",
+                                    rawMessage = "Manual Entry"
+                                )
                             )
-
-                            // Save it and go back
-                            db.transactionDao().insertTransaction(manualTransaction)
-                            onBack()
+                            onBack() // Teleports you back to the Dashboard instantly
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                modifier = Modifier.fillMaxWidth(),
+                // The button stays greyed out until they enter a valid amount and description!
+                enabled = amount.isNotBlank() && description.isNotBlank()
             ) {
-                Text("Save Expense")
+                Text("Save Transaction")
             }
         }
     }
