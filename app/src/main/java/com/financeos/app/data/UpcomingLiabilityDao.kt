@@ -29,8 +29,11 @@ interface UpcomingLiabilityDao {
     @Delete
     suspend fun hardDeleteLiability(liability: UpcomingLiability)
 
-    // --- THE AUTOMATED PURGE QUERY ---
-    // Wipes out records flagged as deleted that are older than the computed millisecond threshold
     @Query("DELETE FROM upcoming_liabilities WHERE isDeleted = 1 AND deletedAt <= :threshold")
     suspend fun purgeOldTrashedLiabilities(threshold: Long)
+
+    // --- THE RECOVERY PIPELINE QUERY ---
+    // Streams items currently sitting in the trash bin sorted by most recently deleted
+    @Query("SELECT * FROM upcoming_liabilities WHERE isDeleted = 1 ORDER BY deletedAt DESC")
+    fun getTrashedLiabilities(): Flow<List<UpcomingLiability>>
 }

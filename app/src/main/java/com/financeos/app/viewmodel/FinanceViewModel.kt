@@ -13,7 +13,9 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     // The Discovered Financial Profile
     val financialEntities = db.financialEntityDao().getAllEntities()
 
-    // --- THE MISSING PIECE: The Timeline Engine ---
-    // This allows the Dashboard to see the bills we saved in the database!
+    // The Timeline Engine (Active Bills)
     val upcomingBills = db.upcomingLiabilityDao().getPendingLiabilities()
+
+    // --- THE SOFT-DELETED TRASH STREAM ---
+    val trashedBills = db.upcomingLiabilityDao().getTrashedLiabilities()
 }

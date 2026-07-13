@@ -68,7 +68,10 @@ fun DashboardScreen(
     val hasNotificationPermission = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
     val allTransactions by viewModel.transactions.collectAsState(initial = emptyList())
     val pendingBills by viewModel.upcomingBills.collectAsState(initial = emptyList())
+    val trashedBills by viewModel.trashedBills.collectAsState(initial = emptyList())
     val totalSpends = allTransactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
+
+    var showTrashBin by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("CFO Command Center") }) },
@@ -123,20 +126,17 @@ fun DashboardScreen(
 
             if (pendingBills.isNotEmpty()) {
                 Text("Upcoming Liabilities", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
-                LazyColumn(modifier = Modifier.heightIn(max = 350.dp)) {
+                LazyColumn(modifier = Modifier.heightIn(max = 250.dp)) {
                     items(
                         items = pendingBills,
                         key = { it.id }
                     ) { bill ->
 
-                        // --- THE SOFT DELETE & LEFT-SWIPE ONLY LOGIC ---
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { dismissValue ->
-                                // Trigger ONLY on a left swipe
                                 if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
                                     coroutineScope.launch {
                                         val db = FinanceDatabase.getDatabase(context)
-                                        // We UPDATE the bill to go into the Trash Bin!
                                         val trashedBill = bill.copy(
                                             isDeleted = true,
                                             deletedAt = System.currentTimeMillis()
@@ -152,8 +152,8 @@ fun DashboardScreen(
 
                         SwipeToDismissBox(
                             state = dismissState,
-                            enableDismissFromStartToEnd = false, // Disables right-swipe
-                            enableDismissFromEndToStart = true,  // Enables left-swipe
+                            enableDismissFromStartToEnd = false,
+                            enableDismissFromEndToStart = true,
                             backgroundContent = {
                                 val color by animateColorAsState(
                                     if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
@@ -168,7 +168,7 @@ fun DashboardScreen(
                                         .padding(bottom = 8.dp)
                                         .background(color, shape = CardDefaults.shape)
                                         .padding(horizontal = 20.dp),
-                                    contentAlignment = Alignment.CenterEnd // Anchors trash icon to the right
+                                    contentAlignment = Alignment.CenterEnd
                                 ) {
                                     Icon(Icons.Default.Delete, contentDescription = "Move to Trash", tint = Color.White)
                                 }
@@ -217,6 +217,50 @@ fun DashboardScreen(
                                 }
                             }
                         )
+                    }
+                }
+            }
+
+            // --- THE COLLAPSIBLE RECYCLE BIN VIEW ---
+            if (trashedBills.isNotEmpty()) {
+                OutlinedButton(
+                    onClick = { showTrashBin = !showTrashBin },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (showTrashBin) "Hide Recycle Bin (${trashedBills.size})" else "View Recycle Bin (${trashedBills.size})")
+                }
+
+                AnimatedVisibility(visible = showTrashBin) {
+                    LazyColumn(modifier = Modifier.heightIn(max = 180.dp)) {
+                        items(trashedBills) { trashedBill ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(trashedBill.title, fontWeight = FontWeight.SemiBold)
+                                        Text("₹${"%.2f".format(trashedBill.amountDue)}", style = MaterialTheme.typography.bodySmall)
+                                    }
+
+                                    // Restore Button (Flips flags back to active state)
+                                    IconButton(onClick = {
+                                        coroutineScope.launch {
+                                            val db = FinanceDatabase.getDatabase(context)
+                                            db.upcomingLiabilityDao().updateLiability(
+                                                trashedBill.copy(isDeleted = false, deletedAt = null)
+                                            )
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.Refresh, contentDescription = "Restore Item", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
