@@ -5,17 +5,17 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-// Version bumped to 3, and UpcomingLiability added to the list of entities!
+// Version bumped to 4 for the Soft Delete Architecture
 @Database(
     entities = [Transaction::class, FinancialEntity::class, UpcomingLiability::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
     abstract fun financialEntityDao(): FinancialEntityDao
-    abstract fun upcomingLiabilityDao(): UpcomingLiabilityDao // The new DAO!
+    abstract fun upcomingLiabilityDao(): UpcomingLiabilityDao
 
     companion object {
         @Volatile
@@ -23,12 +23,13 @@ abstract class FinanceDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): FinanceDatabase {
             return INSTANCE ?: synchronized(this) {
+                // Safely wipes the old V3 database to build the new V4
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     FinanceDatabase::class.java,
                     "finance_database"
                 )
-                    .fallbackToDestructiveMigration() // Safely wipes the V2 database to build V3
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

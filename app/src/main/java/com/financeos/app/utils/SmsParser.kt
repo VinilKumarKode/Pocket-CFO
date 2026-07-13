@@ -6,7 +6,7 @@ import com.financeos.app.data.UpcomingLiability
 
 object SmsParser {
 
-    // --- BRAIN 1: The Transaction Parser (From Phase 3) ---
+    // --- BRAIN 1: The Transaction Parser ---
     fun parseMessage(sender: String, messageBody: String): Transaction? {
         val body = messageBody.lowercase()
 
@@ -46,38 +46,32 @@ object SmsParser {
         )
     }
 
-    // --- BRAIN 2: The New Asset Discovery Engine (Phase 6) ---
+    // --- BRAIN 2: The Asset Discovery Engine ---
     fun parseFinancialEntity(sender: String, messageBody: String): FinancialEntity? {
         val body = messageBody.lowercase()
 
-        // 1. Check if the message contains balance or limit keywords
         if (!body.contains("bal") && !body.contains("limit") && !body.contains("available")) {
             return null
         }
 
         val bankName = extractBankName(sender)
 
-        // 2. We MUST have an account identifier to create a profile
         val accountRegex = Regex("(?i)(?:a/c|acct|card|no\\.?)\\s*[*x\\-]*(\\d{3,4})")
         val accountMatch = accountRegex.find(messageBody)
         val accountEnd = accountMatch?.groupValues?.get(1) ?: return null
 
-        // 3. Extract the Available Balance
         val balRegex = Regex("(?i)(?:bal|balance|available|avl)[^\\d]*?(?:rs\\.?|inr)\\s*([\\d,]+(?:\\.\\d+)?)")
         val balMatch = balRegex.find(messageBody)
         val rawBal = balMatch?.groupValues?.get(1)?.replace(",", "")
         val balance = rawBal?.toDoubleOrNull() ?: 0.0
 
-        // 4. Extract Credit Limit (If it's a credit card)
         val limitRegex = Regex("(?i)(?:limit)[^\\d]*?(?:rs\\.?|inr)\\s*([\\d,]+(?:\\.\\d+)?)")
         val limitMatch = limitRegex.find(messageBody)
         val rawLimit = limitMatch?.groupValues?.get(1)?.replace(",", "")
         val limit = rawLimit?.toDoubleOrNull()
 
-        // 5. Determine if it's a Bank Account or Credit Card
         val type = if (body.contains("card") || limit != null) "CREDIT_CARD" else "BANK_ACCOUNT"
 
-        // If we found neither a balance nor a limit, abort.
         if (balMatch == null && limitMatch == null) return null
 
         return FinancialEntity(
@@ -89,7 +83,80 @@ object SmsParser {
         )
     }
 
-    // A small helper to keep bank logic consistent across both brains
+    // --- BRAIN 3: The Timeline Engine (Upcoming Liabilities) UPGRADED ---
+    fun parseUpcomingLiability(sender: String, messageBody: String): UpcomingLiability? {
+        val body = messageBody.lowercase()
+
+        if (!body.contains("due") && !body.contains("emi") && !body.contains("statement")) {
+            return null
+        }
+        if (body.contains("paid") || body.contains("received") || body.contains("thank you") || body.contains("min due")) {
+            return null
+        }
+
+        val amountRegex = Regex("(?i)(?:rs\\.?|inr|amount|due)\\s*[:\\-]?\\s*([\\d,]+(?:\\.\\d+)?)")
+        val amountMatch = amountRegex.find(messageBody) ?: return null
+        val amount = amountMatch.groupValues[1].replace(",", "").toDoubleOrNull() ?: return null
+
+        val bankName = extractBankName(sender)
+
+        val type = when {
+            body.contains("emi") -> "EMI"
+            body.contains("card") || body.contains("statement") -> "CREDIT CARD"
+            body.contains("electricity") || body.contains("bill") -> "UTILITY BILL"
+            else -> "BILL"
+        }
+
+        val dateRegex = Regex("(?i)(?:by|on|before|date)\\s*[:\\-]?\\s*(\\d{1,2}[-/\\s][a-zA-Z]{3,}|\\d{1,2}[-/]\\d{1,2})")
+        val dateMatch = dateRegex.find(messageBody)
+        val extractedDateStr = dateMatch?.groupValues?.get(1)?.trim()
+
+        val title = if (extractedDateStr != null) {
+            "$bankName $type (Due: $extractedDateStr)"
+        } else {
+            "$bankName $type"
+        }
+
+        return UpcomingLiability(
+            title = title,
+            amountDue = amount,
+            dueDate = System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000),
+            type = type,
+            isPaid = false,
+            rawMessage = messageBody
+        )
+    }
+
+    // --- BRAIN 4: The Notification Interceptor (UPI & Apps) ---
+    fun parseUpiNotification(appName: String, title: String, text: String): Transaction? {
+        val fullText = "$title $text".lowercase()
+
+        if (!fullText.contains("paid") && !fullText.contains("sent")) {
+            return null
+        }
+
+        val amountRegex = Regex("(?i)(?:₹|rs\\.?|inr)\\s*([\\d,]+(?:\\.\\d+)?)")
+        val amountMatch = amountRegex.find(fullText) ?: return null
+        val amount = amountMatch.groupValues[1].replace(",", "").toDoubleOrNull() ?: return null
+
+        val merchantRegex = Regex("(?i)(?:to)\\s+([A-Za-z0-9\\s&]+)")
+        val merchantMatch = merchantRegex.find(fullText)
+        val merchant = merchantMatch?.groupValues?.get(1)?.trim()?.take(20) ?: "UPI Payment"
+
+        return Transaction(
+            amount = amount,
+            type = "EXPENSE",
+            category = CategoryEngine.getCategoryForMerchant(merchant),
+            date = System.currentTimeMillis(),
+            paymentMethod = appName,
+            description = merchant,
+            isReconciled = false,
+            sender = appName,
+            rawMessage = fullText
+        )
+    }
+
+    // --- HELPER FUNCTION ---
     private fun extractBankName(sender: String): String {
         return when {
             sender.contains("HDFC", ignoreCase = true) -> "HDFC Bank"
@@ -101,50 +168,5 @@ object SmsParser {
             sender.contains("BOI", ignoreCase = true) -> "Bank of India"
             else -> sender.replace(Regex("[^A-Za-z]"), "").take(6)
         }
-    }
-    // --- BRAIN 3: The Timeline Engine (Upcoming Liabilities) ---
-    fun parseUpcomingLiability(sender: String, messageBody: String): UpcomingLiability? {
-        val body = messageBody.lowercase()
-
-        // 1. Check if the message is asking for money in the future
-        if (!body.contains("due") && !body.contains("emi") && !body.contains("generated")) {
-            return null
-        }
-
-        // 2. We don't want to accidentally catch a "past due" payment you already made
-        if (body.contains("paid") || body.contains("received") || body.contains("thank you")) {
-            return null
-        }
-
-        // 3. Extract the Amount Due
-        val amountRegex = Regex("(?i)(?:rs\\.?|inr|amount)\\s*([\\d,]+(?:\\.\\d+)?)")
-        val amountMatch = amountRegex.find(messageBody) ?: return null
-        val rawAmount = amountMatch.groupValues[1].replace(",", "")
-        val amount = rawAmount.toDoubleOrNull() ?: return null
-
-        val bankName = extractBankName(sender)
-
-        // 4. Categorize the type of bill
-        val type = when {
-            body.contains("emi") -> "EMI"
-            body.contains("card") || body.contains("statement") -> "CREDIT CARD"
-            else -> "BILL"
-        }
-
-        val title = "$bankName $type"
-
-        // 5. Calculate the Due Date
-        // (Note: Parsing exact dates from messy bank texts is highly complex. For this engine,
-        // we default to flagging the bill as due 7 days from the moment the bank sent the text).
-        val dueDate = System.currentTimeMillis() + (7L * 24 * 60 * 60 * 1000)
-
-        return UpcomingLiability(
-            title = title,
-            amountDue = amount,
-            dueDate = dueDate,
-            type = type,
-            isPaid = false,
-            rawMessage = messageBody
-        )
     }
 }
