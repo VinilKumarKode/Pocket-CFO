@@ -3,6 +3,7 @@ package com.financeos.app.workers
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.financeos.app.data.FinanceDatabase
 import com.financeos.app.utils.InboxScraper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,14 +15,22 @@ class SyncWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         return@withContext try {
-            // 1. Fire up the exact same scraper we built earlier
-            val newTransactions = InboxScraper.syncHistoricalData(applicationContext)
+            val db = FinanceDatabase.getDatabase(applicationContext)
 
-            // 2. Tell Android the background job was a success
+            // 1. Run the core inbound scraping routines for SMS and entities
+            InboxScraper.syncHistoricalData(applicationContext)
+
+            // 2. RUN THE RETENTION ENGINE
+            // Define retention period: 30 days in milliseconds
+            val retentionPeriodMs = 30L * 24 * 60 * 60 * 1000
+            val purgeThreshold = System.currentTimeMillis() - retentionPeriodMs
+
+            // Execute the bulk database sweep
+            db.upcomingLiabilityDao().purgeOldTrashedLiabilities(purgeThreshold)
+
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
-            // If something goes wrong (e.g., phone is updating), try again later
             Result.retry()
         }
     }

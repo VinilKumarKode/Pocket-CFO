@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UpcomingLiabilityDao {
 
-    // --- UPDATED: Only grabs bills that are unpaid AND not in the trash ---
     @Query("SELECT * FROM upcoming_liabilities WHERE isPaid = 0 AND isDeleted = 0 ORDER BY dueDate ASC")
     fun getPendingLiabilities(): Flow<List<UpcomingLiability>>
 
@@ -21,11 +20,17 @@ interface UpcomingLiabilityDao {
     @Update
     suspend fun updateLiability(liability: UpcomingLiability)
 
-    // --- UPDATED: Prevents duplicate syncing, but ignores things you already trashed ---
     @Query("SELECT * FROM upcoming_liabilities WHERE title = :title AND amountDue = :amount AND isPaid = 0 AND isDeleted = 0 LIMIT 1")
     suspend fun findPendingLiability(title: String, amount: Double): UpcomingLiability?
 
-    // We keep the hard delete just in case we need to permanently empty the trash later!
+    @Delete
+    suspend fun deleteLiability(liability: UpcomingLiability)
+
     @Delete
     suspend fun hardDeleteLiability(liability: UpcomingLiability)
+
+    // --- THE AUTOMATED PURGE QUERY ---
+    // Wipes out records flagged as deleted that are older than the computed millisecond threshold
+    @Query("DELETE FROM upcoming_liabilities WHERE isDeleted = 1 AND deletedAt <= :threshold")
+    suspend fun purgeOldTrashedLiabilities(threshold: Long)
 }
