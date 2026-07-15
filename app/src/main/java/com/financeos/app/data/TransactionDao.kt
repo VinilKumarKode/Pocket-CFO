@@ -9,30 +9,21 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-    // This allows the Learning Engine to quickly read past transactions!
-    @Query("SELECT * FROM transactions")
-    suspend fun getAllTransactionsSync(): List<Transaction>
-    // Insert a new transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTransaction(transaction: Transaction)
 
-    // Update an existing transaction (e.g., marking it as reconciled)
-    @Update
-    suspend fun updateTransaction(transaction: Transaction)
-
-    // Delete a specific transaction
-    @Query("DELETE FROM transactions WHERE id = :transactionId")
-    suspend fun deleteTransactionById(transactionId: Int)
-
-    // Get a live stream of all transactions, sorted by most recent
     @Query("SELECT * FROM transactions ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
 
-    // Identify transactions that haven't been verified against a statement
+    // --- ENABLES CFO INTELLIGENCE AUDITING ---
     @Query("SELECT * FROM transactions WHERE isReconciled = 0 ORDER BY date DESC")
     fun getUnreconciledTransactions(): Flow<List<Transaction>>
 
-    // Calculate total rewards earned for a specific payment method
-    @Query("SELECT SUM(rewardPointsEarned) FROM transactions WHERE paymentMethod = :method")
-    fun getTotalRewardsForPaymentMethod(method: String): Flow<Double?>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransaction(transaction: Transaction)
+
+    @Update
+    suspend fun updateTransaction(transaction: Transaction)
+
+    // --- REPAIR: Maps directly to your repository's delete method ---
+    @Query("DELETE FROM transactions WHERE id = :transactionId")
+    suspend fun deleteTransactionById(transactionId: Int)
 }

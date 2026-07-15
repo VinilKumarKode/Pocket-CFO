@@ -6,40 +6,71 @@ import com.financeos.app.data.UpcomingLiability
 
 object SmsParser {
 
-    // --- BRAIN 1: The Transaction Parser ---
+    // --- BRAIN 1: The Dual Transaction Parser (Expenses & Income/Interest) ---
     fun parseMessage(sender: String, messageBody: String): Transaction? {
         val body = messageBody.lowercase()
 
-        if (!body.contains("debited") && !body.contains("spent") && !body.contains("paid")) {
+        // 1. Identify transaction direction
+        val isExpense = body.contains("debited") || body.contains("spent") || body.contains("paid") || body.contains("withdrawn")
+        val isIncome = body.contains("credited") || body.contains("received") || body.contains("deposited") || body.contains("interest paid")
+
+        if (!isExpense && !isIncome) {
             return null
         }
 
-        val amountRegex = Regex("(?i)(?:rs\\.?|inr)\\s*([\\d,]+(?:\\.\\d+)?)")
+        // 2. Safe Amount Extraction
+        val amountRegex = Regex("(?i)(?:rs\\.?|inr|₹)\\s*([\\d,]+(?:\\.\\d+)?)")
         val amountMatch = amountRegex.find(messageBody) ?: return null
         val rawAmount = amountMatch.groupValues[1].replace(",", "")
         val amount = rawAmount.toDoubleOrNull() ?: return null
 
         val bankName = extractBankName(sender)
 
+        // 3. Extract Account/Card Details
         val accountRegex = Regex("(?i)(?:a/c|acct|card|no\\.?)\\s*[*x\\-]*(\\d{3,4})")
         val accountMatch = accountRegex.find(messageBody)
         val accountEnd = accountMatch?.groupValues?.get(1) ?: "Unknown"
-
         val paymentMethod = "$bankName *$accountEnd"
 
-        val merchantRegex = Regex("(?i)(?:at|to|info)\\s+([A-Za-z0-9\\s&]+?)(?:on|ref|val|\\.)")
-        val merchantMatch = merchantRegex.find(messageBody)
-        val merchant = merchantMatch?.groupValues?.get(1)?.trim()?.take(20) ?: "Unknown Merchant"
+        // 4. Determine categorization and details based on direction of cash flow
+        val type: String
+        val category: String
+        val description: String
 
-        val category = CategoryEngine.getCategoryForMerchant(merchant)
+        if (isIncome) {
+            type = "INCOME"
+            category = if (body.contains("interest") || body.contains("dividend")) {
+                "Investments & Interest"
+            } else if (body.contains("salary")) {
+                "Salary"
+            } else {
+                "Deposits & Transfers"
+            }
+
+            description = if (body.contains("interest")) {
+                "Automated Interest Credit"
+            } else {
+                val remitterRegex = Regex("(?i)(?:by|from)\\s+([A-Za-z0-9\\s&]+?)(?:on|ref|val|\\.)")
+                val remitterMatch = remitterRegex.find(messageBody)
+                remitterMatch?.groupValues?.get(1)?.trim()?.take(20) ?: "Incoming Transfer"
+            }
+        } else {
+            type = "EXPENSE"
+            val merchantRegex = Regex("(?i)(?:at|to|info)\\s+([A-Za-z0-9\\s&]+?)(?:on|ref|val|\\.)")
+            val merchantMatch = merchantRegex.find(messageBody)
+            val merchant = merchantMatch?.groupValues?.get(1)?.trim()?.take(20) ?: "Unknown Merchant"
+
+            category = CategoryEngine.getCategoryForMerchant(merchant)
+            description = merchant
+        }
 
         return Transaction(
             amount = amount,
-            type = "EXPENSE",
+            type = type,
             category = category,
             date = System.currentTimeMillis(),
             paymentMethod = paymentMethod,
-            description = merchant,
+            description = description,
             isReconciled = false,
             sender = sender,
             rawMessage = messageBody
@@ -83,7 +114,7 @@ object SmsParser {
         )
     }
 
-    // --- BRAIN 3: The Timeline Engine (Upcoming Liabilities) UPGRADED ---
+    // --- BRAIN 3: The Timeline Engine (Upcoming Liabilities) ---
     fun parseUpcomingLiability(sender: String, messageBody: String): UpcomingLiability? {
         val body = messageBody.lowercase()
 
@@ -156,7 +187,7 @@ object SmsParser {
         )
     }
 
-    // --- HELPER FUNCTION ---
+    // --- HELPER FUNCTION (Fully Exhaustive 'when' block) ---
     private fun extractBankName(sender: String): String {
         return when {
             sender.contains("HDFC", ignoreCase = true) -> "HDFC Bank"
@@ -166,7 +197,10 @@ object SmsParser {
             sender.contains("KOTAK", ignoreCase = true) -> "Kotak Bank"
             sender.contains("IDFC", ignoreCase = true) -> "IDFC First"
             sender.contains("BOI", ignoreCase = true) -> "Bank of India"
-            else -> sender.replace(Regex("[^A-Za-z]"), "").take(6)
+            else -> {
+                val cleanSender = sender.replace(Regex("[^A-Za-z]"), "").take(6)
+                cleanSender.ifEmpty { "Other" }
+            }
         }
     }
 }
